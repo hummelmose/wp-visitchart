@@ -1,0 +1,207 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WP VisitChart 1.0.7\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-23 00:00+0000\n"
+"PO-Revision-Date: 2026-06-23 00:00+0000\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Domain: wp-visitchart\n"
+
+#: live-stats.php
+msgid "WP VisitChart"
+msgstr "WP VisitChart"
+
+#: live-stats.php
+msgid "Live besøgende og dagens trafik"
+msgstr "Live visitors and today's traffic"
+
+#: live-stats.php
+msgid "Indlæser data..."
+msgstr "Loading data..."
+
+#: live-stats.php
+msgid "Live besøgende lige nu"
+msgstr "Live visitors right now"
+
+#: live-stats.php
+msgid "bots registreret"
+msgstr "bots detected"
+
+#: live-stats.php
+msgid "bot"
+msgstr "bot"
+
+#: live-stats.php
+msgid "Besøgende i dag (5-minutters intervaller)"
+msgstr "Visitors today (5-minute intervals)"
+
+#: live-stats.php
+msgid "Mest aktive sider lige nu"
+msgstr "Most active pages right now"
+
+#: live-stats.php
+msgid "Mest besøgte sider i dag"
+msgstr "Most visited pages today"
+
+#: live-stats.php
+msgid "Ingen aktive sider"
+msgstr "No active pages"
+
+#: live-stats.php
+msgid "Ingen data endnu i dag"
+msgstr "No data yet today"
+
+#: live-stats.php
+msgid "Unikke besøgende"
+msgstr "Unique visitors"
+
+#: live-stats.php
+msgid "Sidevisninger"
+msgstr "Pageviews"
+
+#: live-stats.php
+msgid "samme ugedag sidste uge"
+msgstr "same weekday last week"
+
+#: live-stats.php
+msgid "Forkert eller manglende adgangskode."
+msgstr "Incorrect or missing access code."
+
+#: live-stats.php
+msgid "WP VisitChart - Mobil"
+msgstr "WP VisitChart - Mobile"
+
+#: live-stats.php
+msgid "Opdateres automatisk"
+msgstr "Updates automatically"
+
+#: live-stats.php
+msgid "Mobil-side (uden login, til bogmærke på telefon):"
+msgstr "Mobile page (no login, for bookmarking on phone):"
+
+#: live-stats.php
+msgid "Du har ikke rettigheder til dette."
+msgstr "You do not have permission to do this."
+
+#: live-stats.php
+msgid "Adgangskoden er nulstillet. Det gamle mobil-link virker ikke længere."
+msgstr "The access code has been reset. The old mobile link no longer works."
+
+#: live-stats.php
+msgid "Nulstil adgangskode"
+msgstr "Reset access code"
+
+#: live-stats.php
+msgid "Er du sikker? Det gamle mobil-link stopper med at virke."
+msgstr "Are you sure? The old mobile link will stop working."
+
+#: live-stats.php
+msgid "Trafikkilder i dag"
+msgstr "Traffic sources today"
+
+#: live-stats.php
+msgid "Direkte"
+msgstr "Direct"
+
+#: live-stats.php
+msgid "Søgemaskiner"
+msgstr "Search engines"
+
+#: live-stats.php
+msgid "Sociale medier"
+msgstr "Social media"
+
+#: live-stats.php
+msgid "Andre hjemmesider"
+msgstr "Other websites"
+
+#: live-stats.php
+msgid "Mest henvisende domæner"
+msgstr "Top referring domains"
+
+#: live-stats.php
+msgid "Ingen henvisende domæner i dag"
+msgstr "No referring domains today"
+
+#: live-stats.php
+msgid "Enheder i dag"
+msgstr "Devices today"
+
+#: live-stats.php
+msgid "Mobil"
+msgstr "Mobile"
+
+#: live-stats.php
+msgid "Tablet"
+msgstr "Tablet"
+
+#: live-stats.php
+msgid "Desktop"
+msgstr "Desktop"
+
+#: live-stats.php
+msgid "Gns. tid på siden i dag"
+msgstr "Avg. time on page today"
+
+#: live-stats.php
+msgid "Besøgende fra (land)"
+msgstr "Visitors from (country)"
+
+#: live-stats.php
+msgid "Trending"
+msgstr "Trending"
+
+#: live-stats.php
+msgid "WP VisitChart - Indstillinger"
+msgstr "WP VisitChart - Settings"
+
+#: live-stats.php
+msgid "Indstillinger"
+msgstr "Settings"
+
+#: live-stats.php
+msgid "Indstillingerne er gemt."
+msgstr "Settings saved."
+
+#: live-stats.php
+msgid "Admin-bjælke"
+msgstr "Admin bar"
+
+#: live-stats.php
+msgid "Vis live besøgstal i admin-bjælken (den sorte bjælke i toppen)"
+msgstr "Show live visitor count in the admin bar (the black bar at the top)"
+
+#: live-stats.php
+msgid "Slået fra fjernes tallet helt fra menuen, både i wp-admin og på frontend."
+msgstr "When disabled, the count is completely removed from the menu, both in wp-admin and on the frontend."
+
+#: live-stats.php
+msgid "Mobilside"
+msgstr "Mobile page"
+
+#: live-stats.php
+msgid "Aktiver den login-frie mobilside"
+msgstr "Enable the login-free mobile page"
+
+#: live-stats.php
+msgid "Slået fra viser mobilsiden en fejlmeddelelse, uanset om linket og adgangskoden ellers er korrekte."
+msgstr "When disabled, the mobile page shows an error message, regardless of whether the link and access code are otherwise correct."
+
+#: live-stats.php
+msgid "Gem indstillinger"
+msgstr "Save settings"
+
+#: live-stats.php
+msgid "Mobilside - adgang"
+msgstr "Mobile page - access"
+
+#: live-stats.php
+msgid "mobilsiden er slået fra ovenfor"
+msgstr "the mobile page is disabled above"
+
+#: live-stats.php
+msgid "Mobilsiden er deaktiveret."
+msgstr "The mobile page is disabled."

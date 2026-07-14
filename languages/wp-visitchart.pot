@@ -1,0 +1,209 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WP VisitChart 1.0.7\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-23 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2026-06-23 00:00+0000\n"
+"Language-Team: \n"
+"X-Generator: manual\n"
+"X-Domain: wp-visitchart\n"
+
+#: live-stats.php
+msgid "WP VisitChart"
+msgstr ""
+
+#: live-stats.php
+msgid "Live besøgende og dagens trafik"
+msgstr ""
+
+#: live-stats.php
+msgid "Indlæser data..."
+msgstr ""
+
+#: live-stats.php
+msgid "Live besøgende lige nu"
+msgstr ""
+
+#: live-stats.php
+msgid "bots registreret"
+msgstr ""
+
+#: live-stats.php
+msgid "bot"
+msgstr ""
+
+#: live-stats.php
+msgid "Besøgende i dag (5-minutters intervaller)"
+msgstr ""
+
+#: live-stats.php
+msgid "Mest aktive sider lige nu"
+msgstr ""
+
+#: live-stats.php
+msgid "Mest besøgte sider i dag"
+msgstr ""
+
+#: live-stats.php
+msgid "Ingen aktive sider"
+msgstr ""
+
+#: live-stats.php
+msgid "Ingen data endnu i dag"
+msgstr ""
+
+#: live-stats.php
+msgid "Unikke besøgende"
+msgstr ""
+
+#: live-stats.php
+msgid "Sidevisninger"
+msgstr ""
+
+#: live-stats.php
+msgid "samme ugedag sidste uge"
+msgstr ""
+
+#: live-stats.php
+msgid "Forkert eller manglende adgangskode."
+msgstr ""
+
+#: live-stats.php
+msgid "WP VisitChart - Mobil"
+msgstr ""
+
+#: live-stats.php
+msgid "Opdateres automatisk"
+msgstr ""
+
+#: live-stats.php
+msgid "Mobil-side (uden login, til bogmærke på telefon):"
+msgstr ""
+
+#: live-stats.php
+msgid "Du har ikke rettigheder til dette."
+msgstr ""
+
+#: live-stats.php
+msgid "Adgangskoden er nulstillet. Det gamle mobil-link virker ikke længere."
+msgstr ""
+
+#: live-stats.php
+msgid "Nulstil adgangskode"
+msgstr ""
+
+#: live-stats.php
+msgid "Er du sikker? Det gamle mobil-link stopper med at virke."
+msgstr ""
+
+#: live-stats.php
+msgid "Trafikkilder i dag"
+msgstr ""
+
+#: live-stats.php
+msgid "Direkte"
+msgstr ""
+
+#: live-stats.php
+msgid "Søgemaskiner"
+msgstr ""
+
+#: live-stats.php
+msgid "Sociale medier"
+msgstr ""
+
+#: live-stats.php
+msgid "Andre hjemmesider"
+msgstr ""
+
+#: live-stats.php
+msgid "Mest henvisende domæner"
+msgstr ""
+
+#: live-stats.php
+msgid "Ingen henvisende domæner i dag"
+msgstr ""
+
+#: live-stats.php
+msgid "Enheder i dag"
+msgstr ""
+
+#: live-stats.php
+msgid "Mobil"
+msgstr ""
+
+#: live-stats.php
+msgid "Tablet"
+msgstr ""
+
+#: live-stats.php
+msgid "Desktop"
+msgstr ""
+
+#: live-stats.php
+msgid "Gns. tid på siden i dag"
+msgstr ""
+
+#: live-stats.php
+msgid "Besøgende fra (land)"
+msgstr ""
+
+#: live-stats.php
+msgid "Trending"
+msgstr ""
+
+#: live-stats.php
+msgid "WP VisitChart - Indstillinger"
+msgstr ""
+
+#: live-stats.php
+msgid "Indstillinger"
+msgstr ""
+
+#: live-stats.php
+msgid "Indstillingerne er gemt."
+msgstr ""
+
+#: live-stats.php
+msgid "Admin-bjælke"
+msgstr ""
+
+#: live-stats.php
+msgid "Vis live besøgstal i admin-bjælken (den sorte bjælke i toppen)"
+msgstr ""
+
+#: live-stats.php
+msgid "Slået fra fjernes tallet helt fra menuen, både i wp-admin og på frontend."
+msgstr ""
+
+#: live-stats.php
+msgid "Mobilside"
+msgstr ""
+
+#: live-stats.php
+msgid "Aktiver den login-frie mobilside"
+msgstr ""
+
+#: live-stats.php
+msgid "Slået fra viser mobilsiden en fejlmeddelelse, uanset om linket og adgangskoden ellers er korrekte."
+msgstr ""
+
+#: live-stats.php
+msgid "Gem indstillinger"
+msgstr ""
+
+#: live-stats.php
+msgid "Mobilside - adgang"
+msgstr ""
+
+#: live-stats.php
+msgid "mobilsiden er slået fra ovenfor"
+msgstr ""
+
+#: live-stats.php
+msgid "Mobilsiden er deaktiveret."
+msgstr ""
+
