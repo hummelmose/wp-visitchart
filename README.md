@@ -6,17 +6,6 @@
 
 WP VisitChart is a self-hosted WordPress plugin for real-time traffic analytics. It shows live visitor counts, today's traffic graph compared to the same weekday last week, traffic sources, device breakdown, trending articles, and per-post pageview tracking — all without any third-party services or subscriptions. Data never leaves your own server.
 
-## Screenshots
-
-### Live Dashboard
-![Dashboard](screenshot-dashboard.png)
-
-### Mobile Page
-![Mobile](screenshot-mobile.png)
-
-### Pageviews in Posts List
-![Posts List](screenshot-posts-list.png)
-
 ## Features
 
 - 📊 Live visitor count with automatic 10-second refresh
