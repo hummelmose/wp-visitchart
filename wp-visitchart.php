@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 1.9.5
+ * Version: 1.9.6
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -703,17 +703,6 @@ function lstats_render_mobile_page( $token ) {
     <h1><?php esc_html_e( 'Live besøgende og dagens trafik', 'wp-visitchart' ); ?></h1>
 
     <div class="card">
-        <div class="sublabel" style="margin-top: 0; padding-top: 0; border-top: none;"><?php esc_html_e( 'Trafikkilder i dag', 'wp-visitchart' ); ?></div>
-        <ul class="bot-list" id="m-referrer-categories-list"></ul>
-        <div class="sublabel"><?php esc_html_e( 'Enheder i dag', 'wp-visitchart' ); ?></div>
-        <ul class="bot-list" id="m-devices-list"></ul>
-        <ul class="bot-list">
-            <li><span class="page-title"><?php esc_html_e( 'Gns. tid på sitet', 'wp-visitchart' ); ?>:</span>
-                <span class="count-num" id="m-avg-time"> 0:00</span></li>
-        </ul>
-    </div>
-
-    <div class="card">
         <div class="label"><?php esc_html_e( 'Besøgende i dag (5-minutters intervaller)', 'wp-visitchart' ); ?></div>
         <div class="chart-wrap">
             <canvas id="m-chart"></canvas>
@@ -728,6 +717,17 @@ function lstats_render_mobile_page( $token ) {
     <div class="card">
         <div class="label"><?php esc_html_e( 'Mest besøgte sider i dag', 'wp-visitchart' ); ?></div>
         <ul class="page-list" id="m-top-pages-list"></ul>
+    </div>
+
+    <div class="card">
+        <div class="sublabel" style="margin-top: 0; padding-top: 0; border-top: none;"><?php esc_html_e( 'Trafikkilder i dag', 'wp-visitchart' ); ?></div>
+        <ul class="bot-list" id="m-referrer-categories-list"></ul>
+        <div class="sublabel"><?php esc_html_e( 'Enheder i dag', 'wp-visitchart' ); ?></div>
+        <ul class="bot-list" id="m-devices-list"></ul>
+        <ul class="bot-list">
+            <li><span class="page-title"><?php esc_html_e( 'Gns. tid på sitet', 'wp-visitchart' ); ?>:</span>
+                <span class="count-num" id="m-avg-time"> 0:00</span></li>
+        </ul>
     </div>
 
     <div class="card">
@@ -1874,7 +1874,7 @@ function lstats_handle_save_settings() {
 add_action( 'admin_post_lstats_save_settings', 'lstats_handle_save_settings' );
 
 function lstats_render_dashboard() {
-    $version = '1.9.5';
+    $version = '1.9.6';
     $year    = date( 'Y' );
     ?>
     <div class="wrap">
