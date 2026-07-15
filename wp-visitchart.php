@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 1.9.3
+ * Version: 1.9.5
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -1245,6 +1245,65 @@ add_filter( 'rocket_preload_exclude_urls', function( $urls ) {
 } );
 
 /**
+ * Sæt en cookie der signalerer til WP Rocket, at mobilsiden aldrig må caches.
+ * WP Rocket respekterer automatisk sider, der sætter en cookie med præfikset
+ * "wordpress_" eller via rocket_cookies_white_list – vi bruger i stedet
+ * do_not_cache-headeren, der er den officielle WP Rocket-måde at slå cache fra
+ * på en specifik forespørgsel.
+ */
+add_action( 'template_redirect', function() {
+    if ( isset( $_GET['lstats_mobile'] ) ) {
+        if ( function_exists( 'rocket_clean_request' ) ) {
+            header( 'X-Rocket-No-Cache: 1' );
+        }
+        header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );
+        header( 'Pragma: no-cache' );
+    }
+}, 1 );
+
+/**
+ * Transients med lstats-data skal ikke gemmes i et persistent object cache
+ * (Redis/Memcached), fordi de kan sidde fast langt længere end de 30 sekunder
+ * vi sætter som TTL. Vi bruger wp_cache_delete til at rydde dem aktivt efter
+ * hver skriveoperation i stedet for at stole på TTL-udløb.
+ */
+function lstats_bust_transient_cache() {
+    $keys = array(
+        'lstats_live_count',
+        'lstats_live_pages',
+        'lstats_top_pages',
+        'lstats_referrers',
+        'lstats_insights',
+        'lstats_today_history',
+    );
+    foreach ( $keys as $key ) {
+        wp_cache_delete( $key, 'options' );
+        wp_cache_delete( '_transient_' . $key, 'options' );
+        wp_cache_delete( '_transient_timeout_' . $key, 'options' );
+    }
+}
+// Ryd object cache automatisk ved siden-indlæsning i admin,
+// så dashboardet aldrig viser forældet data fra Redis/Memcached
+add_action( 'admin_init', function() {
+    if ( isset( $_GET['page'] ) && 'lstats-dashboard' === $_GET['page'] ) {
+        lstats_bust_transient_cache();
+    }
+} );
+
+// Ryd vores transients når WP Rocket invaliderer og genopbygger cache
+// efter publicering eller opdatering af et indlæg/side.
+// Dette forhindrer at preloaderen cacher tomme lstats-svar.
+add_action( 'rocket_after_clean_post', function() {
+    lstats_bust_transient_cache();
+} );
+add_action( 'rocket_preload_after_clean_post', function() {
+    lstats_bust_transient_cache();
+} );
+add_action( 'after_rocket_clean_domain', function() {
+    lstats_bust_transient_cache();
+} );
+
+/**
  * Modtag heartbeat fra frontend
  */
 function lstats_handle_heartbeat( WP_REST_Request $request ) {
@@ -1400,6 +1459,7 @@ function lstats_get_live_count( WP_REST_Request $request ) {
     );
 
     set_transient( 'lstats_live_count', $result, 8 );
+    wp_cache_delete( '_transient_lstats_live_count', 'options' );
 
     return new WP_REST_Response( $result, 200 );
 }
@@ -1473,6 +1533,7 @@ function lstats_get_today_history( WP_REST_Request $request ) {
     }
 
     set_transient( 'lstats_today_history', $history, 30 );
+    wp_cache_delete( '_transient_lstats_today_history', 'options' );
 
     return new WP_REST_Response( $history, 200 );
 }
@@ -1580,6 +1641,7 @@ function lstats_get_referrers( WP_REST_Request $request ) {
     );
 
     set_transient( 'lstats_referrers', $result, 30 );
+    wp_cache_delete( '_transient_lstats_referrers', 'options' );
 
     return new WP_REST_Response( $result, 200 );
 }
@@ -1664,6 +1726,7 @@ function lstats_get_insights( WP_REST_Request $request ) {
     );
 
     set_transient( 'lstats_insights', $result, 30 );
+    wp_cache_delete( '_transient_lstats_insights', 'options' );
 
     return new WP_REST_Response( $result, 200 );
 }
@@ -1811,7 +1874,7 @@ function lstats_handle_save_settings() {
 add_action( 'admin_post_lstats_save_settings', 'lstats_handle_save_settings' );
 
 function lstats_render_dashboard() {
-    $version = '1.9.3';
+    $version = '1.9.5';
     $year    = date( 'Y' );
     ?>
     <div class="wrap">
