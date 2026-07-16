@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.0.6
+ * Version: 2.1.1
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'LSTATS_TABLE', 'lstats_heartbeats' );
 define( 'LSTATS_VIEWS_TABLE', 'lstats_post_views' );
-define( 'LSTATS_DB_VERSION', '1.6' );
+define( 'LSTATS_DB_VERSION', '1.7' );
 
 /**
  * Indlæs oversættelser fra /languages-mappen
@@ -135,7 +135,8 @@ function lstats_create_or_upgrade_table() {
         PRIMARY KEY (id),
         KEY idx_created_at (created_at),
         KEY idx_post_id (post_id),
-        KEY idx_session (session_id)
+        KEY idx_session (session_id),
+        KEY idx_bot_source_time (is_bot, source, created_at)
     ) $charset_collate;";
 
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -173,28 +174,78 @@ add_action( 'plugins_loaded', 'lstats_maybe_upgrade' );
 /**
  * Simpelt bot-tjek baseret på user-agent streng
  */
+/**
+ * Fælles bot-signatur-array brugt af både lstats_is_bot_user_agent og lstats_get_bot_name.
+ * Bygges én gang per request via static og genbruges derefter, så vi undgår at
+ * genallokere arrayet ved hvert enkelt kald. Rækkefølgen er vigtig: mere specifikke
+ * signaturer (f.eks. 'googlebot') står før generiske ('bot') så vi får det rigtige navn.
+ */
+function lstats_bot_signatures() {
+    static $sigs = null;
+    if ( null === $sigs ) {
+        $sigs = array(
+            'googlebot'           => 'Googlebot',
+            'bingbot'             => 'Bingbot',
+            'bingpreview'         => 'Bing Preview',
+            'duckduckbot'         => 'DuckDuckBot',
+            'yandexbot'           => 'YandexBot',
+            'yandex'              => 'YandexBot',
+            'baiduspider'         => 'Baidu Spider',
+            'facebookexternalhit' => 'Facebook',
+            'slurp'               => 'Yahoo Slurp',
+            'ahrefsbot'           => 'AhrefsBot',
+            'semrushbot'          => 'SemrushBot',
+            'mj12bot'             => 'Majestic (MJ12bot)',
+            'dotbot'              => 'DotBot',
+            'petalbot'            => 'PetalBot',
+            'gptbot'              => 'GPTBot (OpenAI)',
+            'oai-searchbot'       => 'OpenAI SearchBot',
+            'chatgpt-user'        => 'ChatGPT-User',
+            'claudebot'           => 'ClaudeBot (Anthropic)',
+            'claude-web'          => 'Claude-Web (Anthropic)',
+            'anthropic'           => 'Anthropic-bot',
+            'ccbot'               => 'CCBot (Common Crawl)',
+            'perplexitybot'       => 'PerplexityBot',
+            'amazonbot'           => 'Amazonbot',
+            'applebot'            => 'Applebot',
+            'bytespider'          => 'ByteSpider (TikTok)',
+            'linkedinbot'         => 'LinkedInBot',
+            'twitterbot'          => 'Twitterbot',
+            'pinterest'           => 'Pinterest',
+            'wp-rocket'           => 'WP Rocket Preload',
+            'rocket-preload'      => 'WP Rocket Preload',
+            'wprocketbot'         => 'WP Rocket Preload',
+            'cloudflare'          => 'Cloudflare',
+            'cf-preload'          => 'Cloudflare Preload',
+            'pingdom'             => 'Pingdom Monitor',
+            'uptime'              => 'Uptime Monitor',
+            'monitor'             => 'Uptime Monitor',
+            'lighthouse'          => 'Google Lighthouse',
+            'pagespeed'           => 'PageSpeed Insights',
+            'gtmetrix'            => 'GTmetrix',
+            'curl'                => 'curl-script',
+            'wget'                => 'wget-script',
+            'python-requests'     => 'Python-script',
+            'headlesschrome'      => 'Headless Chrome',
+            'phantomjs'           => 'PhantomJS',
+            'bot'                 => 'Bot',
+            'crawl'               => 'Crawler',
+            'spider'              => 'Spider',
+        );
+    }
+    return $sigs;
+}
+
 function lstats_is_bot_user_agent( $user_agent ) {
     if ( empty( $user_agent ) ) {
-        return true; // Ingen user-agent er typisk en bot eller et script
+        return true;
     }
-
-    $bot_signatures = array(
-        'bot', 'crawl', 'spider', 'slurp', 'bingpreview', 'facebookexternalhit',
-        'pingdom', 'uptime', 'monitor', 'curl', 'wget', 'python-requests',
-        'headlesschrome', 'phantomjs', 'ahrefsbot', 'semrushbot', 'mj12bot',
-        'dotbot', 'petalbot', 'yandex', 'duckduckbot', 'baiduspider',
-        'gptbot', 'claudebot', 'anthropic', 'ccbot', 'perplexitybot',
-        'wp-rocket', 'rocket-preload', 'cloudflare', 'cf-preload',
-        'wprocketbot', 'lighthouse', 'pagespeed', 'gtmetrix',
-    );
-
     $ua_lower = strtolower( $user_agent );
-    foreach ( $bot_signatures as $signature ) {
-        if ( strpos( $ua_lower, $signature ) !== false ) {
+    foreach ( lstats_bot_signatures() as $signature => $_ ) {
+        if ( false !== strpos( $ua_lower, $signature ) ) {
             return true;
         }
     }
-
     return false;
 }
 
@@ -205,57 +256,12 @@ function lstats_get_bot_name( $user_agent ) {
     if ( empty( $user_agent ) ) {
         return 'Ukendt bot (ingen user-agent)';
     }
-
-    $known_bots = array(
-        'googlebot'            => 'Googlebot',
-        'bingbot'               => 'Bingbot',
-        'bingpreview'           => 'Bing Preview',
-        'duckduckbot'           => 'DuckDuckBot',
-        'yandexbot'             => 'YandexBot',
-        'baiduspider'           => 'Baidu Spider',
-        'facebookexternalhit'   => 'Facebook',
-        'slurp'                 => 'Yahoo Slurp',
-        'ahrefsbot'             => 'AhrefsBot',
-        'semrushbot'            => 'SemrushBot',
-        'mj12bot'               => 'Majestic (MJ12bot)',
-        'dotbot'                => 'DotBot',
-        'petalbot'              => 'PetalBot',
-        'gptbot'                => 'GPTBot (OpenAI)',
-        'oai-searchbot'         => 'OpenAI SearchBot',
-        'chatgpt-user'          => 'ChatGPT-User',
-        'claudebot'             => 'ClaudeBot (Anthropic)',
-        'claude-web'            => 'Claude-Web (Anthropic)',
-        'anthropic'             => 'Anthropic-bot',
-        'ccbot'                 => 'CCBot (Common Crawl)',
-        'perplexitybot'         => 'PerplexityBot',
-        'amazonbot'             => 'Amazonbot',
-        'applebot'              => 'Applebot',
-        'bytespider'            => 'ByteSpider (TikTok)',
-        'linkedinbot'           => 'LinkedInBot',
-        'twitterbot'            => 'Twitterbot',
-        'pinterest'             => 'Pinterest',
-        'wp-rocket'             => 'WP Rocket Preload',
-        'rocket-preload'        => 'WP Rocket Preload',
-        'cloudflare'            => 'Cloudflare',
-        'pingdom'               => 'Pingdom Monitor',
-        'uptime'                => 'Uptime Monitor',
-        'lighthouse'            => 'Google Lighthouse',
-        'pagespeed'             => 'PageSpeed Insights',
-        'gtmetrix'              => 'GTmetrix',
-        'curl'                  => 'curl-script',
-        'wget'                  => 'wget-script',
-        'python-requests'       => 'Python-script',
-        'headlesschrome'        => 'Headless Chrome',
-        'phantomjs'             => 'PhantomJS',
-    );
-
     $ua_lower = strtolower( $user_agent );
-    foreach ( $known_bots as $signature => $name ) {
-        if ( strpos( $ua_lower, $signature ) !== false ) {
+    foreach ( lstats_bot_signatures() as $signature => $name ) {
+        if ( false !== strpos( $ua_lower, $signature ) ) {
             return $name;
         }
     }
-
     return 'Anden bot';
 }
 
@@ -304,8 +310,13 @@ function lstats_categorize_referrer( $referrer, $url = '' ) {
 
     $host = preg_replace( '/^www\./', '', strtolower( $host ) );
 
-    // Hvis henvisningen kommer fra sitet selv, regnes det som direkte/intern navigation
-    $site_host = preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) );
+    // home_url() slår op i databasen (get_option). Med static cache kaldes det
+    // kun én gang per request, selv når funktionen kaldes 25.000 gange i en løkke.
+    static $site_host = null;
+    if ( null === $site_host ) {
+        $site_host = preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) );
+    }
+
     if ( $host === $site_host ) {
         return array(
             'category' => 'direct',
@@ -441,17 +452,26 @@ function lstats_log_pageload() {
         return;
     }
 
+    $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
+    $is_bot     = lstats_is_bot_user_agent( $user_agent );
+
+    // Rækker med source='pageload' og is_bot=0 bruges aldrig i nogen queries –
+    // alle brugerdata hentes udelukkende fra heartbeat-rækker. Bots kører normalt
+    // ikke JavaScript og sender dermed ikke heartbeats, så de skrives stadig her.
+    // Ved at springe non-bot INSERTs over reducerer vi skrivningerne markant
+    // (typisk 99%+ af sideindlæsninger er ikke-bots) og holder tabellen slank.
+    if ( ! $is_bot ) {
+        return;
+    }
+
     global $wpdb;
     $table = $wpdb->prefix . LSTATS_TABLE;
 
-    $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
-    $is_bot     = lstats_is_bot_user_agent( $user_agent ) ? 1 : 0;
-    $ip         = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-    $post_id    = get_queried_object_id();
-    $url        = sanitize_text_field( $_SERVER['REQUEST_URI'] ?? '' );
-    $referrer   = isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : '';
+    $ip       = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+    $post_id  = get_queried_object_id();
+    $url      = sanitize_text_field( $_SERVER['REQUEST_URI'] ?? '' );
+    $referrer = isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : '';
 
-    // Lav en pseudo-session-id ud fra IP + user agent, så vi kan tælle "unikke" besøgende uden cookies
     $session_id = 'srv_' . substr( md5( $ip . $user_agent ), 0, 20 );
     $device     = lstats_guess_device_type( $user_agent );
 
@@ -461,7 +481,7 @@ function lstats_log_pageload() {
             'post_id'     => $post_id,
             'session_id'  => $session_id,
             'url'         => $url,
-            'is_bot'      => $is_bot,
+            'is_bot'      => 1,
             'source'      => 'pageload',
             'user_agent'  => $user_agent,
             'referrer'    => $referrer,
@@ -1405,6 +1425,13 @@ function lstats_get_live_count( WP_REST_Request $request ) {
         $previous_counts[ (int) $row->post_id ] = (int) $row->live;
     }
 
+    // Hent alle post-titles og permalinks i ét samlet database-kald, i stedet for
+    // at get_the_title/get_permalink foretager individuelle opslag i løkken nedenfor.
+    $post_ids = wp_list_pluck( $per_page, 'post_id' );
+    if ( ! empty( $post_ids ) ) {
+        _prime_post_caches( array_map( 'intval', $post_ids ), false, false );
+    }
+
     $pages = array();
     foreach ( $per_page as $row ) {
         $title = html_entity_decode( get_the_title( $row->post_id ), ENT_QUOTES, 'UTF-8' );
@@ -1561,6 +1588,11 @@ function lstats_get_top_pages( WP_REST_Request $request ) {
         $start_of_day
     ) );
 
+    $post_ids = wp_list_pluck( $rows, 'post_id' );
+    if ( ! empty( $post_ids ) ) {
+        _prime_post_caches( array_map( 'intval', $post_ids ), false, false );
+    }
+
     $pages = array();
     foreach ( $rows as $row ) {
         $title = html_entity_decode( get_the_title( $row->post_id ), ENT_QUOTES, 'UTF-8' );
@@ -1590,25 +1622,20 @@ function lstats_get_referrers( WP_REST_Request $request ) {
 
     $start_of_day = date( 'Y-m-d 00:00:00', current_time( 'timestamp' ) );
 
+    // Henter kun den FØRSTE referrer/url per session (via MIN(id) subquery).
+    // Langt færre rækker end at hente alle og deduplikere i PHP, og undgår
+    // ONLY_FULL_GROUP_BY-problemer som opstår ved direkte GROUP BY på non-aggregated kolonner.
     $rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT session_id, referrer, url
-         FROM $table
-         WHERE created_at >= %s AND is_bot = 0 AND source = 'heartbeat'
-         ORDER BY created_at ASC",
+        "SELECT h.session_id, h.referrer, h.url
+         FROM $table h
+         WHERE h.id IN (
+             SELECT MIN(id)
+             FROM $table
+             WHERE created_at >= %s AND is_bot = 0 AND source = 'heartbeat'
+             GROUP BY session_id
+         )",
         $start_of_day
     ) );
-
-    // Deduplikér i PHP (i stedet for SQL GROUP BY, som kan fejle under MySQL's
-    // ONLY_FULL_GROUP_BY-tilstand) - behold den først registrerede referrer/url per session
-    $seen_sessions = array();
-    foreach ( $rows as $row ) {
-        if ( ! isset( $seen_sessions[ $row->session_id ] ) ) {
-            $seen_sessions[ $row->session_id ] = array(
-                'referrer' => $row->referrer,
-                'url'      => $row->url,
-            );
-        }
-    }
 
     $categories = array(
         'direct' => 0,
@@ -1618,8 +1645,8 @@ function lstats_get_referrers( WP_REST_Request $request ) {
     );
     $domains = array();
 
-    foreach ( $seen_sessions as $session_data ) {
-        $info = lstats_categorize_referrer( $session_data['referrer'], $session_data['url'] );
+    foreach ( $rows as $row ) {
+        $info = lstats_categorize_referrer( $row->referrer, $row->url );
         $categories[ $info['category'] ]++;
 
         if ( ! empty( $info['domain'] ) ) {
@@ -1664,44 +1691,42 @@ function lstats_get_insights( WP_REST_Request $request ) {
 
     $start_of_day = date( 'Y-m-d 00:00:00', current_time( 'timestamp' ) );
 
-    $rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT session_id, post_id, device_type, created_at
+    // Enhedsfordeling: én GROUP BY-forespørgsel i SQL – ingen PHP-løkke nødvendig.
+    // COUNT(DISTINCT session_id) sikrer at en session med mange heartbeats kun tælles én gang.
+    $device_rows = $wpdb->get_results( $wpdb->prepare(
+        "SELECT
+            COALESCE(NULLIF(device_type, ''), 'desktop') AS device,
+            COUNT(DISTINCT session_id) AS cnt
          FROM $table
          WHERE created_at >= %s AND is_bot = 0 AND source = 'heartbeat'
-         ORDER BY created_at ASC",
+         GROUP BY device",
         $start_of_day
     ) );
 
-    $devices = array(
-        'mobile'  => array(),
-        'tablet'  => array(),
-        'desktop' => array(),
-    );
-    $session_times = array();
-
-    foreach ( $rows as $row ) {
-        $device = $row->device_type ? $row->device_type : 'desktop';
-        if ( ! isset( $devices[ $device ] ) ) {
-            $device = 'desktop';
+    $device_counts = array( 'mobile' => 0, 'tablet' => 0, 'desktop' => 0 );
+    foreach ( $device_rows as $row ) {
+        $d = $row->device;
+        if ( ! isset( $device_counts[ $d ] ) ) {
+            $d = 'desktop';
         }
-        $devices[ $device ][ $row->session_id ] = true;
-
-        // Spor alle heartbeat-tidspunkter per session+side, så vi kan beregne den
-        // faktiske aktive tid - ikke bare tidsspændet fra første til sidste heartbeat,
-        // som ville inkludere perioder hvor fanen lå ubrugt i baggrunden
-        $time_key = $row->session_id . '-' . $row->post_id;
-        $timestamp = strtotime( $row->created_at );
-        if ( ! isset( $session_times[ $time_key ] ) ) {
-            $session_times[ $time_key ] = array();
-        }
-        $session_times[ $time_key ][] = $timestamp;
+        $device_counts[ $d ] = (int) $row->cnt;
     }
 
-    $device_counts = array(
-        'mobile'  => count( $devices['mobile'] ),
-        'tablet'  => count( $devices['tablet'] ),
-        'desktop' => count( $devices['desktop'] ),
-    );
+    // Gennemsnitlig aktiv tid: henter kun de tre kolonner vi faktisk har brug for,
+    // og sorterer i databasen så vi undgår sort() per session i PHP.
+    $time_rows = $wpdb->get_results( $wpdb->prepare(
+        "SELECT session_id, post_id, created_at
+         FROM $table
+         WHERE created_at >= %s AND is_bot = 0 AND source = 'heartbeat'
+         ORDER BY session_id, post_id, created_at ASC",
+        $start_of_day
+    ) );
+
+    $session_times = array();
+    foreach ( $time_rows as $row ) {
+        $time_key = $row->session_id . '-' . $row->post_id;
+        $session_times[ $time_key ][] = strtotime( $row->created_at );
+    }
 
     // Gennemsnitlig aktiv tid på siden: vi summerer kun mellemrummene mellem to
     // efterfølgende heartbeats, når mellemrummet er under 60 sekunder (heartbeat
@@ -1712,7 +1737,7 @@ function lstats_get_insights( WP_REST_Request $request ) {
     // gennemsnittet en smule ned - det er en kendt og accepteret upræcision.
     $durations = array();
     foreach ( $session_times as $timestamps ) {
-        sort( $timestamps );
+        // Timestamps er allerede sorteret fra SQL (ORDER BY session_id, post_id, created_at ASC)
         $active_seconds = 0;
         for ( $i = 1, $count = count( $timestamps ); $i < $count; $i++ ) {
             $gap = $timestamps[ $i ] - $timestamps[ $i - 1 ];
@@ -1892,7 +1917,7 @@ function lstats_handle_save_settings() {
 add_action( 'admin_post_lstats_save_settings', 'lstats_handle_save_settings' );
 
 function lstats_render_dashboard() {
-    $version = '2.0.6';
+    $version = '2.1.1';
     $year    = date( 'Y' );
     ?>
     <div class="wrap">
@@ -2131,7 +2156,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.0.6';
+    $plugin_version = '2.1.1';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
