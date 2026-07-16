@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 1.9.6
+ * Version: 2.0.6
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -673,7 +673,8 @@ function lstats_render_mobile_page( $token ) {
             font-size: 12px;
         }
         .chart-wrap {
-            height: 220px;
+            height: 280px;
+            max-height: 280px;
             position: relative;
         }
         .empty {
@@ -720,9 +721,12 @@ function lstats_render_mobile_page( $token ) {
     </div>
 
     <div class="card">
-        <div class="sublabel" style="margin-top: 0; padding-top: 0; border-top: none;"><?php esc_html_e( 'Trafikkilder i dag', 'wp-visitchart' ); ?></div>
+        <div class="label"><?php esc_html_e( 'Trafikkilder i dag', 'wp-visitchart' ); ?></div>
         <ul class="bot-list" id="m-referrer-categories-list"></ul>
-        <div class="sublabel"><?php esc_html_e( 'Enheder i dag', 'wp-visitchart' ); ?></div>
+    </div>
+
+    <div class="card">
+        <div class="label"><?php esc_html_e( 'Enheder i dag', 'wp-visitchart' ); ?></div>
         <ul class="bot-list" id="m-devices-list"></ul>
         <ul class="bot-list">
             <li><span class="page-title"><?php esc_html_e( 'Gns. tid på sitet', 'wp-visitchart' ); ?>:</span>
@@ -1833,6 +1837,20 @@ function lstats_admin_favicon() {
     echo '<link rel="icon" type="image/png" href="' . esc_url( $icon_url ) . '">';
 }
 add_action( 'admin_head', 'lstats_admin_favicon' );
+
+// Giver .wrap ekstra padding-top på dashboard-siden så indholdet
+// ikke gemmer sig bag den faste sticky-bjælke
+add_action( 'admin_head', function() {
+    $screen = get_current_screen();
+    if ( ! $screen || 'toplevel_page_lstats-dashboard' !== $screen->id ) {
+        return;
+    }
+    echo '<style>
+        .toplevel_page_lstats-dashboard #wpcontent { padding-top: 0; }
+        .toplevel_page_lstats-dashboard .wrap { padding-top: 58px; padding-bottom: 0; }
+        .toplevel_page_lstats-dashboard .wrap > h1 { margin-top: 6px !important; margin-bottom: 6px !important; padding: 0 !important; }
+    </style>';
+} );
 add_action( 'admin_menu', 'lstats_admin_menu' );
 
 /**
@@ -1874,11 +1892,31 @@ function lstats_handle_save_settings() {
 add_action( 'admin_post_lstats_save_settings', 'lstats_handle_save_settings' );
 
 function lstats_render_dashboard() {
-    $version = '1.9.6';
+    $version = '2.0.6';
     $year    = date( 'Y' );
     ?>
     <div class="wrap">
-        <h1><?php esc_html_e( 'Live besøgende og dagens trafik', 'wp-visitchart' ); ?></h1>
+        <h1 style="margin-top: 6px !important; margin-bottom: 6px !important; padding: 0;"><?php esc_html_e( 'Live besøgende og dagens trafik', 'wp-visitchart' ); ?></h1>
+        <div id="lstats-sticky-bar">
+            <div class="lstats-sticky-item">
+                <div class="lstats-sticky-label"><?php esc_html_e( 'Live besøgende', 'wp-visitchart' ); ?></div>
+                <div class="lstats-sticky-number" id="lstats-sticky-total">0</div>
+            </div>
+        </div>
+        <script>
+        (function() {
+            function positionStickyBar() {
+                var bar = document.getElementById('lstats-sticky-bar');
+                var menuWrap = document.getElementById('adminmenuwrap');
+                if ( bar && menuWrap ) {
+                    bar.style.left = menuWrap.offsetWidth + 'px';
+                }
+            }
+            positionStickyBar();
+            window.addEventListener('resize', positionStickyBar);
+            setTimeout(positionStickyBar, 300);
+        })();
+        </script>
         <div id="lstats-app">
             <p><?php esc_html_e( 'Indlæser data...', 'wp-visitchart' ); ?></p>
         </div>
@@ -2093,8 +2131,9 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), '1.7.4', true );
-    wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), '1.7.4' );
+    $plugin_version = '2.0.6';
+    wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
+    wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
     if ( ! lstats_is_fontawesome_loaded( 'admin' ) ) {
         wp_enqueue_style( 'lstats-fontawesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', array(), '6.5.1' );

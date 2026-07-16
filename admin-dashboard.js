@@ -17,19 +17,7 @@
         var i18n = lstatsAdmin.i18n;
         app.innerHTML =
             '<div class="lstats-row">' +
-                '<div class="lstats-card lstats-live-count">' +
-                    '<div class="lstats-label">' + escapeHtml(i18n.liveVisitorsNow) + '</div>' +
-                    '<div class="lstats-number" id="lstats-total">0</div>' +
-                    '<div class="lstats-sublabel">' + escapeHtml(i18n.trafficSourcesToday) + '</div>' +
-                    '<ul class="lstats-bot-list" id="lstats-referrer-categories-list"></ul>' +
-                    '<div class="lstats-sublabel">' + escapeHtml(i18n.devicesToday) + '</div>' +
-                    '<ul class="lstats-bot-list" id="lstats-devices-list"></ul>' +
-                    '<ul class="lstats-bot-list">' +
-                        '<li><span class="lstats-page-title">' + escapeHtml(i18n.avgTimeOnPage) + ':</span>' +
-                        '<span class="lstats-page-count" id="lstats-avg-time"> 0:00</span></li>' +
-                    '</ul>' +
-                '</div>' +
-                '<div class="lstats-card lstats-chart-card">' +
+                '<div class="lstats-card lstats-chart-card lstats-chart-full">' +
                     '<div class="lstats-label">' + escapeHtml(i18n.visitorsToday) + '</div>' +
                     '<div class="lstats-chart-wrap">' +
                         '<canvas id="lstats-chart"></canvas>' +
@@ -44,6 +32,20 @@
                 '<div class="lstats-card lstats-top-pages">' +
                     '<div class="lstats-label">' + escapeHtml(i18n.mostVisitedToday) + '</div>' +
                     '<ul id="lstats-top-pages-list"></ul>' +
+                '</div>' +
+            '</div>' +
+            '<div class="lstats-row">' +
+                '<div class="lstats-card lstats-traffic-sources">' +
+                    '<div class="lstats-label">' + escapeHtml(i18n.trafficSourcesToday) + '</div>' +
+                    '<ul class="lstats-bot-list" id="lstats-referrer-categories-list"></ul>' +
+                '</div>' +
+                '<div class="lstats-card lstats-devices-card">' +
+                    '<div class="lstats-label">' + escapeHtml(i18n.devicesToday) + '</div>' +
+                    '<ul class="lstats-bot-list" id="lstats-devices-list"></ul>' +
+                    '<ul class="lstats-bot-list">' +
+                        '<li><span class="lstats-page-title">' + escapeHtml(i18n.avgTimeOnPage) + ':</span>' +
+                        '<span class="lstats-page-count" id="lstats-avg-time"> 0:00</span></li>' +
+                    '</ul>' +
                 '</div>' +
             '</div>' +
             '<div class="lstats-row">' +
@@ -68,12 +70,11 @@
 
     function updateLiveCount() {
         fetchJson('live-count').then(function (data) {
-            var totalEl = document.getElementById('lstats-total');
+            var totalEl = document.getElementById('lstats-sticky-total');
             totalEl.textContent = formatNumber(data.total);
 
             if (previousTotal !== null && data.total !== previousTotal) {
                 totalEl.classList.remove('lstats-flash');
-                // Tving reflow så animationen kan genstartes selv ved hurtige skift
                 void totalEl.offsetWidth;
                 totalEl.classList.add('lstats-flash');
                 setTimeout(function () {
@@ -365,3 +366,5 @@
     setInterval(updateReferrers, 60000);
     setInterval(updateInsights, 60000);
 })();
+
+// 2.0.6
