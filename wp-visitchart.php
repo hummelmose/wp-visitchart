@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.1.2
+ * Version: 2.1.3
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -1585,28 +1585,33 @@ function lstats_get_today_history( WP_REST_Request $request ) {
 }
 
 /**
- * Mest besøgte sider i dag (totalt, ikke kun live)
+ * Mest besøgte sider i dag.
+ * Bruger lstats_post_views i stedet for at aggregere heartbeat-data –
+ * tallene vedligeholdes allerede i realtid af pageview-ping'et, så dette
+ * er et simpelt primær-nøgle-opslag på en lille tabel frem for en
+ * COUNT(DISTINCT) aggregering på potentielt millioner af heartbeat-rækker.
  */
 function lstats_get_top_pages( WP_REST_Request $request ) {
     global $wpdb;
-    $table = $wpdb->prefix . LSTATS_TABLE;
+    $views_table = $wpdb->prefix . LSTATS_VIEWS_TABLE;
 
-    $start_of_day = date( 'Y-m-d 00:00:00', current_time( 'timestamp' ) );
+    $today = date( 'Y-m-d', current_time( 'timestamp' ) );
 
     $rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT post_id, COUNT(DISTINCT session_id) as visitors
-         FROM $table
-         WHERE created_at >= %s AND post_id > 0 AND is_bot = 0 AND source = 'heartbeat'
-         GROUP BY post_id
-         ORDER BY visitors DESC
+        "SELECT post_id, views_today AS visitors
+         FROM $views_table
+         WHERE count_date = %s AND views_today > 0
+         ORDER BY views_today DESC
          LIMIT 15",
-        $start_of_day
+        $today
     ) );
 
-    $post_ids = wp_list_pluck( $rows, 'post_id' );
-    if ( ! empty( $post_ids ) ) {
-        _prime_post_caches( array_map( 'intval', $post_ids ), false, false );
+    if ( empty( $rows ) ) {
+        return new WP_REST_Response( array(), 200 );
     }
+
+    $post_ids = wp_list_pluck( $rows, 'post_id' );
+    _prime_post_caches( array_map( 'intval', $post_ids ), false, false );
 
     $pages = array();
     foreach ( $rows as $row ) {
@@ -1932,7 +1937,7 @@ function lstats_handle_save_settings() {
 add_action( 'admin_post_lstats_save_settings', 'lstats_handle_save_settings' );
 
 function lstats_render_dashboard() {
-    $version = '2.1.2';
+    $version = '2.1.3';
     $year    = date( 'Y' );
     ?>
     <div class="wrap">
@@ -2171,7 +2176,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.1.2';
+    $plugin_version = '2.1.3';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
