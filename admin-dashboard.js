@@ -42,10 +42,6 @@
                 '<div class="lstats-card lstats-devices-card">' +
                     '<div class="lstats-label">' + escapeHtml(i18n.devicesToday) + '</div>' +
                     '<ul class="lstats-bot-list" id="lstats-devices-list"></ul>' +
-                    '<ul class="lstats-bot-list">' +
-                        '<li><span class="lstats-page-title">' + escapeHtml(i18n.avgTimeOnPage) + ':</span>' +
-                        '<span class="lstats-page-count" id="lstats-avg-time"> 0:00</span></li>' +
-                    '</ul>' +
                 '</div>' +
             '</div>' +
             '<div class="lstats-row">' +
@@ -315,11 +311,6 @@
         });
     }
 
-    function formatDuration(seconds) {
-        var m = Math.floor(seconds / 60);
-        var s = seconds % 60;
-        return m + ':' + String(s).padStart(2, '0');
-    }
 
     function updateInsights() {
         fetchJson('insights').then(function (data) {
@@ -339,7 +330,6 @@
                 deviceList.appendChild(li);
             });
 
-            document.getElementById('lstats-avg-time').textContent = ' ' + formatDuration(data.avg_time_seconds || 0);
         });
     }
 
@@ -372,3 +362,4 @@
 // 2.1.1
 // 2.1.2
 // 2.1.3
+// 2.1.4

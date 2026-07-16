@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.1.3
+ * Version: 2.1.4
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -748,10 +748,6 @@ function lstats_render_mobile_page( $token ) {
     <div class="card">
         <div class="label"><?php esc_html_e( 'Enheder i dag', 'wp-visitchart' ); ?></div>
         <ul class="bot-list" id="m-devices-list"></ul>
-        <ul class="bot-list">
-            <li><span class="page-title"><?php esc_html_e( 'Gns. tid på sitet', 'wp-visitchart' ); ?>:</span>
-                <span class="count-num" id="m-avg-time"> 0:00</span></li>
-        </ul>
     </div>
 
     <div class="card">
@@ -1045,11 +1041,6 @@ function lstats_render_mobile_page( $token ) {
             });
         }
 
-        function formatDuration(seconds) {
-            var m = Math.floor(seconds / 60);
-            var s = seconds % 60;
-            return m + ':' + String(s).padStart(2, '0');
-        }
 
         function updateInsights() {
             fetchJson('insights').then(function (data) {
@@ -1068,7 +1059,6 @@ function lstats_render_mobile_page( $token ) {
                     deviceList.appendChild(li);
                 });
 
-                document.getElementById('m-avg-time').textContent = ' ' + formatDuration(data.avg_time_seconds || 0);
             });
         }
 
@@ -1698,7 +1688,7 @@ function lstats_get_referrers( WP_REST_Request $request ) {
 }
 
 /**
- * Hent dagens indsigter: enhedsfordeling, geografi og gennemsnitlig tid på siden
+ * Hent dagens indsigter: enhedsfordeling
  */
 function lstats_get_insights( WP_REST_Request $request ) {
     global $wpdb;
@@ -1732,46 +1722,8 @@ function lstats_get_insights( WP_REST_Request $request ) {
         $device_counts[ $d ] = (int) $row->cnt;
     }
 
-    // Gennemsnitlig aktiv tid: henter kun de tre kolonner vi faktisk har brug for,
-    // og sorterer i databasen så vi undgår sort() per session i PHP.
-    $time_rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT session_id, post_id, created_at
-         FROM $table
-         WHERE created_at >= %s AND is_bot = 0 AND source = 'heartbeat'
-         ORDER BY session_id, post_id, created_at ASC",
-        $start_of_day
-    ) );
-
-    $session_times = array();
-    foreach ( $time_rows as $row ) {
-        $time_key = $row->session_id . '-' . $row->post_id;
-        $session_times[ $time_key ][] = strtotime( $row->created_at );
-    }
-
-    // Gennemsnitlig aktiv tid på siden: vi summerer kun mellemrummene mellem to
-    // efterfølgende heartbeats, når mellemrummet er under 60 sekunder (heartbeat
-    // sendes hvert 12. sekund, så 60 sekunder giver god margin for netværksudsving).
-    // Er mellemrummet større, regnes besøgende for at have lagt fanen i baggrunden
-    // eller forladt siden i den periode, og det tælles ikke som aktiv tid.
-    // Besøg med kun ét heartbeat (varighed 0) tæller stadig med, men trækker
-    // gennemsnittet en smule ned - det er en kendt og accepteret upræcision.
-    $durations = array();
-    foreach ( $session_times as $timestamps ) {
-        // Timestamps er allerede sorteret fra SQL (ORDER BY session_id, post_id, created_at ASC)
-        $active_seconds = 0;
-        for ( $i = 1, $count = count( $timestamps ); $i < $count; $i++ ) {
-            $gap = $timestamps[ $i ] - $timestamps[ $i - 1 ];
-            if ( $gap <= 60 ) {
-                $active_seconds += $gap;
-            }
-        }
-        $durations[] = $active_seconds;
-    }
-    $avg_seconds = count( $durations ) > 0 ? round( array_sum( $durations ) / count( $durations ) ) : 0;
-
     $result = array(
-        'devices'        => $device_counts,
-        'avg_time_seconds' => $avg_seconds,
+        'devices' => $device_counts,
     );
 
     set_transient( 'lstats_insights', $result, 30 );
@@ -1937,7 +1889,7 @@ function lstats_handle_save_settings() {
 add_action( 'admin_post_lstats_save_settings', 'lstats_handle_save_settings' );
 
 function lstats_render_dashboard() {
-    $version = '2.1.3';
+    $version = '2.1.4';
     $year    = date( 'Y' );
     ?>
     <div class="wrap">
@@ -2176,7 +2128,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.1.3';
+    $plugin_version = '2.1.4';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
@@ -2211,7 +2163,6 @@ function lstats_enqueue_admin( $hook ) {
             'mobile'             => __( 'Mobil', 'wp-visitchart' ),
             'tablet'             => __( 'Tablet', 'wp-visitchart' ),
             'desktop'            => __( 'Desktop', 'wp-visitchart' ),
-            'avgTimeOnPage'      => __( 'Gns. tid på sitet', 'wp-visitchart' ),
             'trending'           => __( 'Trending', 'wp-visitchart' ),
         ),
     ) );
