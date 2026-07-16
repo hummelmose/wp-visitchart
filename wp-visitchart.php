@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.1.1
+ * Version: 2.1.2
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -1511,16 +1511,31 @@ function lstats_get_today_history( WP_REST_Request $request ) {
     $today_date     = date( 'Y-m-d', current_time( 'timestamp' ) );
     $last_week_date = date( 'Y-m-d', current_time( 'timestamp' ) - ( 7 * 86400 ) );
 
+    $today_start     = $today_date . ' 00:00:00';
+    $today_end       = date( 'Y-m-d', current_time( 'timestamp' ) + 86400 ) . ' 00:00:00';
+    $last_week_start = $last_week_date . ' 00:00:00';
+    $last_week_end   = date( 'Y-m-d', current_time( 'timestamp' ) - ( 6 * 86400 ) ) . ' 00:00:00';
+
+    // DATE(created_at) IN (...) tvinger MySQL til at beregne DATE() for hver række
+    // og kan ikke bruge indekset på created_at (function-based full table scan).
+    // Eksplicitte range-betingelser lader MySQL bruge idx_bot_source_time direkte.
     $rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT
             DATE_FORMAT(created_at, '%%Y-%%m-%%d %%H:%%i') as minute_bucket,
             session_id,
             post_id
          FROM $table
-         WHERE DATE(created_at) IN ( %s, %s ) AND is_bot = 0 AND source = 'heartbeat'
+         WHERE is_bot = 0 AND source = 'heartbeat'
+           AND (
+               (created_at >= %s AND created_at < %s)
+               OR
+               (created_at >= %s AND created_at < %s)
+           )
          ORDER BY created_at ASC",
-        $today_date,
-        $last_week_date
+        $today_start,
+        $today_end,
+        $last_week_start,
+        $last_week_end
     ) );
 
     // Gruppér i 5-minutters buckets og tæl unikke sessions samt unikke sidevisninger,
@@ -1917,7 +1932,7 @@ function lstats_handle_save_settings() {
 add_action( 'admin_post_lstats_save_settings', 'lstats_handle_save_settings' );
 
 function lstats_render_dashboard() {
-    $version = '2.1.1';
+    $version = '2.1.2';
     $year    = date( 'Y' );
     ?>
     <div class="wrap">
@@ -2156,7 +2171,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.1.1';
+    $plugin_version = '2.1.2';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
