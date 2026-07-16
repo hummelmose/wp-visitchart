@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.1.4
+ * Version: 2.1.5
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -1618,8 +1618,9 @@ function lstats_get_top_pages( WP_REST_Request $request ) {
 }
 
 /**
- * Hent dagens trafikkilder, opdelt i kategorier (direkte, søgning, sociale medier, andre)
- * samt en liste over de konkrete henvisende domæner inden for hver kategori
+ * Trafikkilder og henvisende domæner.
+ * Kategorisering sker nu 100% i SQL via CASE WHEN – returnerer 4 kategori-rækker
+ * og 15 domæne-rækker i stedet for ~25.000 rækker til PHP-kategorisering.
  */
 function lstats_get_referrers( WP_REST_Request $request ) {
     global $wpdb;
@@ -1631,54 +1632,96 @@ function lstats_get_referrers( WP_REST_Request $request ) {
     }
 
     $start_of_day = date( 'Y-m-d 00:00:00', current_time( 'timestamp' ) );
+    $site_host    = preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) );
+    $site_like    = '%' . $wpdb->esc_like( $site_host ) . '%';
 
-    // Henter kun den FØRSTE referrer/url per session (via MIN(id) subquery).
-    // Langt færre rækker end at hente alle og deduplikere i PHP, og undgår
-    // ONLY_FULL_GROUP_BY-problemer som opstår ved direkte GROUP BY på non-aggregated kolonner.
-    $rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT h.session_id, h.referrer, h.url
+    // Query 1: Kategori-tælling direkte i SQL – 4 rækker retur i stedet for ~25.000.
+    // %%  i prepare() = literal % i den færdige SQL-streng.
+    $category_rows = $wpdb->get_results( $wpdb->prepare(
+        "SELECT
+            CASE
+                WHEN url LIKE '%%fbclid=%%' THEN 'social'
+                WHEN ( url LIKE '%%utm_source=google%%'    OR url LIKE '%%utm_source=bing%%'
+                    OR url LIKE '%%utm_source=yahoo%%'     OR url LIKE '%%utm_source=duckduckgo%%'
+                    OR url LIKE '%%utm_source=yandex%%'    OR url LIKE '%%utm_source=baidu%%' ) THEN 'search'
+                WHEN ( url LIKE '%%utm_source=facebook%%'  OR url LIKE '%%utm_source=instagram%%'
+                    OR url LIKE '%%utm_source=twitter%%'   OR url LIKE '%%utm_source=linkedin%%'
+                    OR url LIKE '%%utm_source=reddit%%'    OR url LIKE '%%utm_source=tiktok%%'
+                    OR url LIKE '%%utm_source=pinterest%%' OR url LIKE '%%utm_source=youtube%%' ) THEN 'social'
+                WHEN url LIKE '%%utm_source=%%' THEN 'other'
+                WHEN ( referrer = '' OR referrer IS NULL OR referrer LIKE %s ) THEN 'direct'
+                WHEN ( referrer LIKE '%%google.%%'      OR referrer LIKE '%%bing.com%%'
+                    OR referrer LIKE '%%yahoo.com%%'    OR referrer LIKE '%%duckduckgo.com%%'
+                    OR referrer LIKE '%%yandex.%%'      OR referrer LIKE '%%baidu.com%%' ) THEN 'search'
+                WHEN ( referrer LIKE '%%facebook.com%%' OR referrer LIKE '%%instagram.com%%'
+                    OR referrer LIKE '%%twitter.com%%'  OR referrer LIKE '%%x.com%%'
+                    OR referrer LIKE '%%linkedin.com%%' OR referrer LIKE '%%reddit.com%%'
+                    OR referrer LIKE '%%tiktok.com%%'   OR referrer LIKE '%%pinterest.com%%'
+                    OR referrer LIKE '%%youtube.com%%' ) THEN 'social'
+                ELSE 'other'
+            END AS category,
+            COUNT(*) AS cnt
          FROM $table h
          WHERE h.id IN (
-             SELECT MIN(id)
-             FROM $table
+             SELECT MIN(id) FROM $table
              WHERE created_at >= %s AND is_bot = 0 AND source = 'heartbeat'
              GROUP BY session_id
-         )",
+         )
+         GROUP BY category",
+        $site_like,
         $start_of_day
     ) );
 
-    $categories = array(
-        'direct' => 0,
-        'search' => 0,
-        'social' => 0,
-        'other'  => 0,
-    );
-    $domains = array();
-
-    foreach ( $rows as $row ) {
-        $info = lstats_categorize_referrer( $row->referrer, $row->url );
-        $categories[ $info['category'] ]++;
-
-        if ( ! empty( $info['domain'] ) ) {
-            $key = $info['category'] . '|' . $info['domain'];
-            if ( ! isset( $domains[ $key ] ) ) {
-                $domains[ $key ] = array(
-                    'category' => $info['category'],
-                    'domain'   => $info['domain'],
-                    'count'    => 0,
-                );
-            }
-            $domains[ $key ]['count']++;
+    $categories = array( 'direct' => 0, 'search' => 0, 'social' => 0, 'other' => 0 );
+    foreach ( $category_rows as $row ) {
+        if ( isset( $categories[ $row->category ] ) ) {
+            $categories[ $row->category ] = (int) $row->cnt;
         }
     }
 
-    usort( $domains, function( $a, $b ) {
-        return $b['count'] - $a['count'];
-    } );
+    // Query 2: Top 15 domæner direkte i SQL – 15 rækker retur i stedet for ~25.000.
+    // UTM-kilde ekstraheres med SUBSTRING_INDEX; fbclid mappes til facebook.com.
+    $domain_rows = $wpdb->get_results( $wpdb->prepare(
+        "SELECT
+            CASE
+                WHEN url LIKE '%%fbclid=%%' THEN 'facebook.com (fbclid)'
+                WHEN url LIKE '%%utm_source=%%'
+                    THEN CONCAT(
+                        SUBSTRING_INDEX( SUBSTRING_INDEX( url, 'utm_source=', -1 ), '&', 1 ),
+                        ' (utm)'
+                    )
+                WHEN ( referrer = '' OR referrer IS NULL OR referrer LIKE %s ) THEN ''
+                ELSE SUBSTRING_INDEX( SUBSTRING_INDEX( referrer, '//', -1 ), '/', 1 )
+            END AS domain,
+            COUNT(*) AS cnt
+         FROM $table h
+         WHERE h.id IN (
+             SELECT MIN(id) FROM $table
+             WHERE created_at >= %s AND is_bot = 0 AND source = 'heartbeat'
+             GROUP BY session_id
+         )
+         GROUP BY domain
+         HAVING domain != ''
+         ORDER BY cnt DESC
+         LIMIT 15",
+        $site_like,
+        $start_of_day
+    ) );
+
+    $domains = array();
+    foreach ( $domain_rows as $row ) {
+        $domain = preg_replace( '/^www\./i', '', strtolower( $row->domain ) );
+        if ( $domain ) {
+            $domains[] = array(
+                'domain' => $domain,
+                'count'  => (int) $row->cnt,
+            );
+        }
+    }
 
     $result = array(
         'categories' => $categories,
-        'domains'    => array_slice( array_values( $domains ), 0, 15 ),
+        'domains'    => $domains,
     );
 
     set_transient( 'lstats_referrers', $result, 30 );
@@ -1889,7 +1932,7 @@ function lstats_handle_save_settings() {
 add_action( 'admin_post_lstats_save_settings', 'lstats_handle_save_settings' );
 
 function lstats_render_dashboard() {
-    $version = '2.1.4';
+    $version = '2.1.5';
     $year    = date( 'Y' );
     ?>
     <div class="wrap">
@@ -2128,7 +2171,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.1.4';
+    $plugin_version = '2.1.5';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
