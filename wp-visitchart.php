@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.3.5
+ * Version: 2.3.6
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -785,7 +785,7 @@ function lstats_render_mobile_page( $token ) {
     <div class="refresh-note"><?php esc_html_e( 'Opdateres automatisk', 'wp-visitchart' ); ?></div>
 
     <p style="text-align: center; color: #8c8f94; font-size: 11px; margin-top: 24px; padding-bottom: 16px;">
-        WP VisitChart 1.9.3 &mdash; Copyright &copy; 2026<?php $y = date('Y'); if ( $y > 2026 ) { echo '&ndash;' . esc_html( $y ); } ?> Jens E. Hummelmose
+        WP VisitChart <?php echo esc_html( get_plugin_data( __FILE__ )['Version'] ); ?> &mdash; Created by Jens Hummelmose, 2026<?php $y = date('Y'); if ( $y > 2026 ) { echo '&ndash;' . esc_html( $y ); } ?>
     </p>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -1954,7 +1954,7 @@ function lstats_render_dashboard() {
             <p><?php esc_html_e( 'Indlæser data...', 'wp-visitchart' ); ?></p>
         </div>
         <p style="margin-top: 24px; color: #8c8f94; font-size: 12px;">
-            WP VisitChart <?php echo esc_html( $version ); ?> &mdash; Copyright &copy; 2026<?php if ( $year > 2026 ) { echo '&ndash;' . esc_html( $year ); } ?> Jens E. Hummelmose
+            WP VisitChart <?php echo esc_html( get_plugin_data( __FILE__ )['Version'] ); ?> &mdash; Created by Jens Hummelmose, 2026<?php if ( $year > 2026 ) { echo '&ndash;' . esc_html( $year ); } ?>
         </p>
     </div>
     <?php
@@ -2164,7 +2164,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.3.5';
+    $plugin_version = '2.3.6';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
