@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.3.4
+ * Version: 2.3.5
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -1306,16 +1306,15 @@ add_action( 'template_redirect', function() {
 function lstats_bust_transient_cache() {
     $keys = array(
         'lstats_live_count',
-        'lstats_live_pages',
-        'lstats_top_pages',
+        'lstats_today_history',
         'lstats_referrers',
         'lstats_insights',
-        'lstats_today_history',
     );
     foreach ( $keys as $key ) {
-        wp_cache_delete( $key, 'options' );
-        wp_cache_delete( '_transient_' . $key, 'options' );
-        wp_cache_delete( '_transient_timeout_' . $key, 'options' );
+        delete_transient( $key );
+        wp_cache_delete( $key );
+        wp_cache_delete( '_transient_' . $key );
+        wp_cache_delete( '_transient_timeout_' . $key );
     }
 }
 // Ryd object cache automatisk ved siden-indlæsning i admin,
@@ -1522,7 +1521,7 @@ function lstats_get_live_count( WP_REST_Request $request ) {
     );
 
     set_transient( 'lstats_live_count', $result, 8 );
-    wp_cache_delete( '_transient_lstats_live_count', 'options' );
+    wp_cache_delete( '_transient_lstats_live_count' );
 
     return new WP_REST_Response( $result, 200 );
 }
@@ -1611,7 +1610,7 @@ function lstats_get_today_history( WP_REST_Request $request ) {
     }
 
     set_transient( 'lstats_today_history', $history, 30 );
-    wp_cache_delete( '_transient_lstats_today_history', 'options' );
+    wp_cache_delete( '_transient_lstats_today_history' );
 
     return new WP_REST_Response( $history, 200 );
 }
@@ -1715,7 +1714,7 @@ function lstats_get_referrers( WP_REST_Request $request ) {
     );
 
     set_transient( 'lstats_referrers', $result, 30 );
-    wp_cache_delete( '_transient_lstats_referrers', 'options' );
+    wp_cache_delete( '_transient_lstats_referrers' );
 
     return new WP_REST_Response( $result, 200 );
 }
@@ -1759,7 +1758,7 @@ function lstats_get_insights( WP_REST_Request $request ) {
     );
 
     set_transient( 'lstats_insights', $result, 30 );
-    wp_cache_delete( '_transient_lstats_insights', 'options' );
+    wp_cache_delete( '_transient_lstats_insights' );
 
     return new WP_REST_Response( $result, 200 );
 }
@@ -1926,7 +1925,7 @@ function lstats_handle_save_settings() {
 add_action( 'admin_post_lstats_save_settings', 'lstats_handle_save_settings' );
 
 function lstats_render_dashboard() {
-    $version = '2.3.4';
+    $version = '2.3.5';
     $year    = date( 'Y' );
     ?>
     <div class="wrap">
@@ -2165,7 +2164,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.3.4';
+    $plugin_version = '2.3.5';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
