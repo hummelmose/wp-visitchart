@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.1.7
+ * Version: 2.3.0
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -17,7 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'LSTATS_TABLE', 'lstats_heartbeats' );
 define( 'LSTATS_VIEWS_TABLE', 'lstats_post_views' );
-define( 'LSTATS_DB_VERSION', '1.7' );
+define( 'LSTATS_SESSIONS_TABLE', 'lstats_sessions' );
+define( 'LSTATS_DB_VERSION', '1.8' );
 
 /**
  * Indlæs oversættelser fra /languages-mappen
@@ -157,6 +158,27 @@ function lstats_create_or_upgrade_table() {
     ) $charset_collate;";
 
     dbDelta( $views_sql );
+
+    // Sessions-tabel: én række per session, skrevet med INSERT IGNORE ved første heartbeat.
+    // Kategori og domæne beregnes ved write-tid, så referrers-queryen er et simpelt
+    // WHERE count_date = ? AND is_bot = 0 på ~25.000 rækker i stedet for subquery +
+    // CASE WHEN + filesort på millioner af heartbeat-rækker.
+    $sessions_table = $wpdb->prefix . LSTATS_SESSIONS_TABLE;
+    $sessions_sql   = "CREATE TABLE $sessions_table (
+        session_id  VARCHAR(64)  NOT NULL,
+        referrer    VARCHAR(255) NOT NULL DEFAULT '',
+        url         VARCHAR(500) NOT NULL DEFAULT '',
+        device_type VARCHAR(20)  NOT NULL DEFAULT '',
+        is_bot      TINYINT(1)   NOT NULL DEFAULT 0,
+        category    VARCHAR(10)  NOT NULL DEFAULT 'direct',
+        domain      VARCHAR(255) NOT NULL DEFAULT '',
+        count_date  DATE         NOT NULL,
+        first_seen  DATETIME     NOT NULL,
+        PRIMARY KEY (session_id),
+        KEY idx_date_bot (count_date, is_bot),
+        KEY idx_first_seen (first_seen)
+    ) $charset_collate;";
+    dbDelta( $sessions_sql );
 
     update_option( 'lstats_db_version', LSTATS_DB_VERSION );
 }
@@ -1361,6 +1383,26 @@ function lstats_handle_heartbeat( WP_REST_Request $request ) {
         array( '%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s' )
     );
 
+    // Skriv session-data på det allerførste heartbeat via INSERT IGNORE.
+    // Efterfølgende heartbeats fra samme session bliver stiltiende ignoreret.
+    // Kategori og domæne beregnes her én gang, så referrers-queryen er triviel.
+    $ref_info        = lstats_categorize_referrer( $referrer, $url );
+    $sessions_table  = $wpdb->prefix . LSTATS_SESSIONS_TABLE;
+    $wpdb->query( $wpdb->prepare(
+        "INSERT IGNORE INTO $sessions_table
+            (session_id, referrer, url, device_type, is_bot, category, domain, count_date, first_seen)
+         VALUES (%s, %s, %s, %s, %d, %s, %s, %s, %s)",
+        $session_id,
+        $referrer,
+        $url,
+        $device,
+        $is_bot,
+        $ref_info['category'],
+        isset( $ref_info['domain'] ) ? $ref_info['domain'] : '',
+        date( 'Y-m-d', current_time( 'timestamp' ) ),
+        current_time( 'mysql' )
+    ) );
+
     return new WP_REST_Response( array( 'success' => true ), 200 );
 }
 
@@ -1619,57 +1661,27 @@ function lstats_get_top_pages( WP_REST_Request $request ) {
 
 /**
  * Trafikkilder og henvisende domæner.
- * Kategorisering sker nu 100% i SQL via CASE WHEN – returnerer 4 kategori-rækker
- * og 15 domæne-rækker i stedet for ~25.000 rækker til PHP-kategorisering.
+ * Henter nu direkte fra lstats_sessions – kategori og domæne er
+ * forudberegnet ved write-tid, så dette er et simpelt index-scan på
+ * ~25.000 rækker i stedet for en subquery + filesort på 1.400.000+ rækker.
  */
 function lstats_get_referrers( WP_REST_Request $request ) {
     global $wpdb;
-    $table = $wpdb->prefix . LSTATS_TABLE;
+    $sessions_table = $wpdb->prefix . LSTATS_SESSIONS_TABLE;
 
     $cached = get_transient( 'lstats_referrers' );
     if ( false !== $cached ) {
         return new WP_REST_Response( $cached, 200 );
     }
 
-    $start_of_day = date( 'Y-m-d 00:00:00', current_time( 'timestamp' ) );
-    $site_host    = preg_replace( '/^www\./', '', strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) );
-    $site_like    = '%' . $wpdb->esc_like( $site_host ) . '%';
+    $today = date( 'Y-m-d', current_time( 'timestamp' ) );
 
-    // Query 1: Kategori-tælling direkte i SQL – 4 rækker retur i stedet for ~25.000.
-    // %%  i prepare() = literal % i den færdige SQL-streng.
     $category_rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT
-            CASE
-                WHEN url LIKE '%%fbclid=%%' THEN 'social'
-                WHEN ( url LIKE '%%utm_source=google%%'    OR url LIKE '%%utm_source=bing%%'
-                    OR url LIKE '%%utm_source=yahoo%%'     OR url LIKE '%%utm_source=duckduckgo%%'
-                    OR url LIKE '%%utm_source=yandex%%'    OR url LIKE '%%utm_source=baidu%%' ) THEN 'search'
-                WHEN ( url LIKE '%%utm_source=facebook%%'  OR url LIKE '%%utm_source=instagram%%'
-                    OR url LIKE '%%utm_source=twitter%%'   OR url LIKE '%%utm_source=linkedin%%'
-                    OR url LIKE '%%utm_source=reddit%%'    OR url LIKE '%%utm_source=tiktok%%'
-                    OR url LIKE '%%utm_source=pinterest%%' OR url LIKE '%%utm_source=youtube%%' ) THEN 'social'
-                WHEN url LIKE '%%utm_source=%%' THEN 'other'
-                WHEN ( referrer = '' OR referrer IS NULL OR referrer LIKE %s ) THEN 'direct'
-                WHEN ( referrer LIKE '%%google.%%'      OR referrer LIKE '%%bing.com%%'
-                    OR referrer LIKE '%%yahoo.com%%'    OR referrer LIKE '%%duckduckgo.com%%'
-                    OR referrer LIKE '%%yandex.%%'      OR referrer LIKE '%%baidu.com%%' ) THEN 'search'
-                WHEN ( referrer LIKE '%%facebook.com%%' OR referrer LIKE '%%instagram.com%%'
-                    OR referrer LIKE '%%twitter.com%%'  OR referrer LIKE '%%x.com%%'
-                    OR referrer LIKE '%%linkedin.com%%' OR referrer LIKE '%%reddit.com%%'
-                    OR referrer LIKE '%%tiktok.com%%'   OR referrer LIKE '%%pinterest.com%%'
-                    OR referrer LIKE '%%youtube.com%%' ) THEN 'social'
-                ELSE 'other'
-            END AS category,
-            COUNT(*) AS cnt
-         FROM $table h
-         WHERE h.id IN (
-             SELECT MIN(id) FROM $table
-             WHERE created_at >= %s AND is_bot = 0 AND source = 'heartbeat'
-             GROUP BY session_id
-         )
+        "SELECT category, COUNT(*) AS cnt
+         FROM $sessions_table
+         WHERE count_date = %s AND is_bot = 0
          GROUP BY category",
-        $site_like,
-        $start_of_day
+        $today
     ) );
 
     $categories = array( 'direct' => 0, 'search' => 0, 'social' => 0, 'other' => 0 );
@@ -1679,44 +1691,22 @@ function lstats_get_referrers( WP_REST_Request $request ) {
         }
     }
 
-    // Query 2: Top 15 domæner direkte i SQL – 15 rækker retur i stedet for ~25.000.
-    // UTM-kilde ekstraheres med SUBSTRING_INDEX; fbclid mappes til facebook.com.
     $domain_rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT
-            CASE
-                WHEN url LIKE '%%fbclid=%%' THEN 'facebook.com (fbclid)'
-                WHEN url LIKE '%%utm_source=%%'
-                    THEN CONCAT(
-                        SUBSTRING_INDEX( SUBSTRING_INDEX( url, 'utm_source=', -1 ), '&', 1 ),
-                        ' (utm)'
-                    )
-                WHEN ( referrer = '' OR referrer IS NULL OR referrer LIKE %s ) THEN ''
-                ELSE SUBSTRING_INDEX( SUBSTRING_INDEX( referrer, '//', -1 ), '/', 1 )
-            END AS domain,
-            COUNT(*) AS cnt
-         FROM $table h
-         WHERE h.id IN (
-             SELECT MIN(id) FROM $table
-             WHERE created_at >= %s AND is_bot = 0 AND source = 'heartbeat'
-             GROUP BY session_id
-         )
+        "SELECT domain, COUNT(*) AS cnt
+         FROM $sessions_table
+         WHERE count_date = %s AND is_bot = 0 AND domain != ''
          GROUP BY domain
-         HAVING domain != ''
          ORDER BY cnt DESC
          LIMIT 15",
-        $site_like,
-        $start_of_day
+        $today
     ) );
 
     $domains = array();
     foreach ( $domain_rows as $row ) {
-        $domain = preg_replace( '/^www\./i', '', strtolower( $row->domain ) );
-        if ( $domain ) {
-            $domains[] = array(
-                'domain' => $domain,
-                'count'  => (int) $row->cnt,
-            );
-        }
+        $domains[] = array(
+            'domain' => $row->domain,
+            'count'  => (int) $row->cnt,
+        );
     }
 
     $result = array(
@@ -1729,7 +1719,6 @@ function lstats_get_referrers( WP_REST_Request $request ) {
 
     return new WP_REST_Response( $result, 200 );
 }
-
 /**
  * Hent dagens indsigter: enhedsfordeling
  */
@@ -1827,9 +1816,13 @@ function lstats_record_pageview( WP_REST_Request $request ) {
 
 function lstats_cleanup_old_data() {
     global $wpdb;
-    $table = $wpdb->prefix . LSTATS_TABLE;
-    $threshold = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 8 * 24 * 3600 ) );
+    $table          = $wpdb->prefix . LSTATS_TABLE;
+    $sessions_table = $wpdb->prefix . LSTATS_SESSIONS_TABLE;
+    $threshold      = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 8 * 24 * 3600 ) );
+    $date_threshold = date( 'Y-m-d', current_time( 'timestamp' ) - ( 8 * 24 * 3600 ) );
+
     $wpdb->query( $wpdb->prepare( "DELETE FROM $table WHERE created_at < %s", $threshold ) );
+    $wpdb->query( $wpdb->prepare( "DELETE FROM $sessions_table WHERE count_date < %s", $date_threshold ) );
 }
 
 function lstats_schedule_cleanup() {
@@ -1889,6 +1882,7 @@ add_action( 'admin_head', function() {
         .toplevel_page_lstats-dashboard #wpcontent { padding-top: 0; }
         .toplevel_page_lstats-dashboard .wrap { padding-top: 58px; padding-bottom: 0; }
         .toplevel_page_lstats-dashboard .wrap > h1 { margin-top: 6px !important; margin-bottom: 6px !important; padding: 0 !important; }
+        .toplevel_page_lstats-dashboard .lstats-page-count { color: #2271b1 !important; font-weight: 600 !important; }
     </style>';
 } );
 add_action( 'admin_menu', 'lstats_admin_menu' );
@@ -1932,7 +1926,7 @@ function lstats_handle_save_settings() {
 add_action( 'admin_post_lstats_save_settings', 'lstats_handle_save_settings' );
 
 function lstats_render_dashboard() {
-    $version = '2.1.7';
+    $version = '2.3.0';
     $year    = date( 'Y' );
     ?>
     <div class="wrap">
@@ -2171,7 +2165,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.1.7';
+    $plugin_version = '2.3.0';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 

@@ -181,7 +181,8 @@
 }
 
 #lstats-pages-list li,
-#lstats-top-pages-list li {
+#lstats-top-pages-list li,
+#lstats-referrer-domains-list li {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -191,7 +192,8 @@
 }
 
 #lstats-pages-list li:last-child,
-#lstats-top-pages-list li:last-child {
+#lstats-top-pages-list li:last-child,
+#lstats-referrer-domains-list li:last-child {
     border-bottom: none;
 }
 
@@ -219,12 +221,23 @@
     color: #2271b1;
     text-decoration: underline;
 }
+
+.lstats-page-domain {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+}
     font-weight: 700;
 }
 
 .lstats-page-count {
     font-weight: 600;
-    color: #2271b1;
+    color: #2271b1 !important;
+    flex-shrink: 0;
+    min-width: 40px;
+    text-align: right;
 }
 
 .lstats-value-wrap {
@@ -260,3 +273,9 @@
 /* 2.1.5 */
 /* 2.1.6 */
 /* 2.1.7 */
+/* 2.1.8 */
+/* 2.1.9 */
+/* 2.2.0 */
+/* 2.2.1 */
+/* 2.2.2 */
+/* 2.3.0 */

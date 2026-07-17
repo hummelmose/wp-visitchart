@@ -303,8 +303,8 @@
             data.domains.forEach(function (ref, index) {
                 var li = document.createElement('li');
                 var num = String(index + 1).padStart(2, '0');
-                li.innerHTML = '<span class="lstats-page-title"><span class="lstats-num">' + num + ':</span> ' +
-                                escapeHtml(ref.domain) + ':</span>' +
+                li.innerHTML = '<span class="lstats-page-title"><span class="lstats-num">' + num + ':</span>' +
+                                '<span class="lstats-page-domain">' + escapeHtml(ref.domain) + ':</span></span>' +
                                 '<span class="lstats-page-count"> ' + formatNumber(ref.count) + '</span>';
                 domainList.appendChild(li);
             });
@@ -366,3 +366,9 @@
 // 2.1.5
 // 2.1.6
 // 2.1.7
+// 2.1.8
+// 2.1.9
+// 2.2.0
+// 2.2.1
+// 2.2.2
+// 2.3.0
