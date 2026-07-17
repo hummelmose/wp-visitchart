@@ -24,34 +24,34 @@
                     '</div>' +
                 '</div>' +
             '</div>' +
-            '<div class="lstats-row">' +
-                '<div class="lstats-card lstats-live-pages">' +
-                    '<div class="lstats-label">' + escapeHtml(i18n.mostActivePagesNow) + '</div>' +
-                    '<ul id="lstats-pages-list"></ul>' +
+            '<div class="lstats-row lstats-two-col">' +
+                '<div class="lstats-col">' +
+                    '<div class="lstats-card">' +
+                        '<div class="lstats-label">' + escapeHtml(i18n.mostActivePagesNow) + '</div>' +
+                        '<ul id="lstats-pages-list"></ul>' +
+                    '</div>' +
+                    '<div class="lstats-card">' +
+                        '<div class="lstats-label">' + escapeHtml(i18n.trafficSourcesToday) + '</div>' +
+                        '<ul class="lstats-bot-list" id="lstats-referrer-categories-list"></ul>' +
+                    '</div>' +
+                    '<div class="lstats-card">' +
+                        '<div class="lstats-label">' + escapeHtml(i18n.devicesToday) + '</div>' +
+                        '<ul class="lstats-bot-list" id="lstats-devices-list"></ul>' +
+                    '</div>' +
+                    '<div class="lstats-card">' +
+                        '<div class="lstats-label">' + escapeHtml(i18n.botsRegistered) + '</div>' +
+                        '<ul class="lstats-bot-list" id="lstats-bot-list"></ul>' +
+                    '</div>' +
                 '</div>' +
-                '<div class="lstats-card lstats-top-pages">' +
-                    '<div class="lstats-label">' + escapeHtml(i18n.mostVisitedToday) + '</div>' +
-                    '<ul id="lstats-top-pages-list"></ul>' +
-                '</div>' +
-            '</div>' +
-            '<div class="lstats-row">' +
-                '<div class="lstats-card lstats-traffic-sources">' +
-                    '<div class="lstats-label">' + escapeHtml(i18n.trafficSourcesToday) + '</div>' +
-                    '<ul class="lstats-bot-list" id="lstats-referrer-categories-list"></ul>' +
-                '</div>' +
-                '<div class="lstats-card lstats-devices-card">' +
-                    '<div class="lstats-label">' + escapeHtml(i18n.devicesToday) + '</div>' +
-                    '<ul class="lstats-bot-list" id="lstats-devices-list"></ul>' +
-                '</div>' +
-            '</div>' +
-            '<div class="lstats-row">' +
-                '<div class="lstats-card lstats-bot-section">' +
-                    '<div class="lstats-bot-count" id="lstats-bot-total">0 ' + escapeHtml(i18n.botsRegistered) + '</div>' +
-                    '<ul class="lstats-bot-list" id="lstats-bot-list"></ul>' +
-                '</div>' +
-                '<div class="lstats-card lstats-referrer-domains">' +
-                    '<div class="lstats-label">' + escapeHtml(i18n.topReferrers) + '</div>' +
-                    '<ul id="lstats-referrer-domains-list"></ul>' +
+                '<div class="lstats-col">' +
+                    '<div class="lstats-card">' +
+                        '<div class="lstats-label">' + escapeHtml(i18n.mostVisitedToday) + '</div>' +
+                        '<ul id="lstats-top-pages-list"></ul>' +
+                    '</div>' +
+                    '<div class="lstats-card">' +
+                        '<div class="lstats-label">' + escapeHtml(i18n.topReferrers) + '</div>' +
+                        '<ul id="lstats-referrer-domains-list"></ul>' +
+                    '</div>' +
                 '</div>' +
             '</div>';
     }
@@ -78,8 +78,6 @@
                 }, 600);
             }
             previousTotal = data.total;
-
-            document.getElementById('lstats-bot-total').textContent = data.bot_total + ' ' + lstatsAdmin.i18n.botsRegistered;
 
             var botList = document.getElementById('lstats-bot-list');
             botList.innerHTML = '';
@@ -372,3 +370,7 @@
 // 2.2.1
 // 2.2.2
 // 2.3.0
+// 2.3.1
+// 2.3.2
+// 2.3.3
+// 2.3.4
