@@ -13,10 +13,9 @@ WP VisitChart is a self-hosted WordPress plugin for real-time traffic analytics.
 - 🔥 Trending badge for fast-rising articles
 - 🌍 Traffic source breakdown (Direct, Search, Social, Other) with UTM + fbclid detection
 - 📱 Device breakdown (Mobile, Tablet, Desktop)
-- ⏱️ Average time on site
 - 🤖 Bot detection and filtering
 - 📰 Per-post pageview column in the Posts/Pages admin list (real-time, no cron)
-- 📲 Bookmarkable mobile page (no login required)
+- 📲 Bookmarkable mobile page (token based login)
 - 🔔 Live visitor count in the WordPress admin bar
 - ⚙️ Settings to toggle all major features on/off, including exclusion of logged-in users
 - 🌐 Fully translatable (Danish + English included)
