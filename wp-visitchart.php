@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.3.6
+ * Version: 2.3.7
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -773,7 +773,7 @@ function lstats_render_mobile_page( $token ) {
     </div>
 
     <div class="card">
-        <div class="bot-count" id="m-bot-total">0 <?php esc_html_e( 'bots registreret', 'wp-visitchart' ); ?></div>
+        <div class="label" id="m-bot-total"><?php esc_html_e( 'BOTS REGISTRERET', 'wp-visitchart' ); ?></div>
         <ul class="bot-list" id="m-bot-list"></ul>
     </div>
 
@@ -848,8 +848,6 @@ function lstats_render_mobile_page( $token ) {
                     setTimeout(function () { totalEl.classList.remove('flash'); }, 600);
                 }
                 previousTotal = data.total;
-
-                document.getElementById('m-bot-total').textContent = data.bot_total + ' ' + i18n.botsRegistered;
 
                 var botList = document.getElementById('m-bot-list');
                 botList.innerHTML = '';
@@ -2164,7 +2162,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.3.6';
+    $plugin_version = '2.3.7';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
