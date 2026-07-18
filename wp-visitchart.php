@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.3.7
+ * Version: 2.3.9
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -2040,13 +2040,31 @@ function lstats_render_settings_page() {
         <h2><?php esc_html_e( 'Mobilside - adgang', 'wp-visitchart' ); ?></h2>
         <p>
             <?php esc_html_e( 'Mobil-side (uden login, til bogmærke på telefon):', 'wp-visitchart' ); ?><br>
+            <span style="display:inline-flex; align-items:center; gap:8px; margin-top:4px;">
             <?php if ( $mobile_enabled ) : ?>
-                <a href="<?php echo esc_url( $mobile_url ); ?>" target="_blank"><?php echo esc_html( $mobile_url ); ?></a>
+                <a href="<?php echo esc_url( $mobile_url ); ?>" target="_blank" id="lstats-mobile-url"><?php echo esc_html( $mobile_url ); ?></a>
             <?php else : ?>
-                <code><?php echo esc_html( $mobile_url ); ?></code>
+                <code id="lstats-mobile-url"><?php echo esc_html( $mobile_url ); ?></code>
                 <em>(<?php esc_html_e( 'mobilsiden er slået fra ovenfor', 'wp-visitchart' ); ?>)</em>
             <?php endif; ?>
+            <button type="button" id="lstats-copy-url" title="<?php esc_attr_e( 'Kopiér URL', 'wp-visitchart' ); ?>"
+                style="background:none; border:none; cursor:pointer; padding:2px 4px; color:#2271b1; line-height:1;">
+                <span class="dashicons dashicons-clipboard"></span>
+            </button>
+            </span>
         </p>
+        <script>
+        document.getElementById('lstats-copy-url').addEventListener('click', function() {
+            var url = document.getElementById('lstats-mobile-url').textContent.trim();
+            var btn = this;
+            navigator.clipboard.writeText(url).then(function() {
+                btn.innerHTML = '<span style="color:#00a32a; font-weight:bold;">&#10003;</span>';
+                setTimeout(function() {
+                    btn.innerHTML = '<span class="dashicons dashicons-clipboard"></span>';
+                }, 2000);
+            });
+        });
+        </script>
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
             <input type="hidden" name="action" value="lstats_reset_token">
             <?php wp_nonce_field( 'lstats_reset_token_action', 'lstats_reset_token_nonce' ); ?>
@@ -2162,7 +2180,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.3.7';
+    $plugin_version = '2.3.9';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
