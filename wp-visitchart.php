@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.4.4
+ * Version: 2.4.5
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'LSTATS_TABLE', 'lstats_heartbeats' );
 define( 'LSTATS_VIEWS_TABLE', 'lstats_post_views' );
 define( 'LSTATS_SESSIONS_TABLE', 'lstats_sessions' );
-define( 'LSTATS_DB_VERSION', '1.8' );
+define( 'LSTATS_DB_VERSION', '1.9' );
 
 /**
  * Indlæs oversættelser fra /languages-mappen
@@ -137,7 +137,8 @@ function lstats_create_or_upgrade_table() {
         KEY idx_created_at (created_at),
         KEY idx_post_id (post_id),
         KEY idx_session (session_id),
-        KEY idx_bot_source_time (is_bot, source, created_at)
+        KEY idx_bot_source_time (is_bot, source, created_at),
+        KEY idx_graph_covering (is_bot, source, created_at, session_id, post_id)
     ) $charset_collate;";
 
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -1559,37 +1560,53 @@ function lstats_get_today_history( WP_REST_Request $request ) {
     $last_week_start = $last_week_date . ' 00:00:00';
     $last_week_end   = date( 'Y-m-d', current_time( 'timestamp' ) - ( 6 * 86400 ) ) . ' 00:00:00';
 
-    // Aggregering sker nu 100% i SQL via FLOOR(UNIX_TIMESTAMP / 300) * 300
-    // som runder ned til nærmeste 5-minutters grænse direkte i databasen.
-    // Returnerer ~576 rækker (288 buckets × 2 dage) i stedet for ~150.000 rækker til PHP.
-    $rows = $wpdb->get_results( $wpdb->prepare(
+    // To separate queries – én per dag – så MySQL kan lave en ren range-scan
+    // på idx_graph_covering (is_bot, source, created_at, session_id, post_id)
+    // uden at OR-betingelsen tvinger en sammenhængende 8-dages range-scan.
+    $today_rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT
             FROM_UNIXTIME(
                 FLOOR(UNIX_TIMESTAMP(created_at) / 300) * 300,
                 '%%H:%%i'
             ) AS time_label,
-            DATE(created_at) AS day,
             COUNT(DISTINCT session_id) AS visitors,
             COUNT(DISTINCT CONCAT(session_id, '-', post_id)) AS pageviews
          FROM $table
          WHERE is_bot = 0 AND source = 'heartbeat'
-           AND (
-               (created_at >= %s AND created_at < %s)
-               OR
-               (created_at >= %s AND created_at < %s)
-           )
-         GROUP BY day, time_label
-         ORDER BY day, time_label ASC",
+           AND created_at >= %s AND created_at < %s
+         GROUP BY time_label",
         $today_start,
-        $today_end,
+        $today_end
+    ) );
+
+    $last_week_rows = $wpdb->get_results( $wpdb->prepare(
+        "SELECT
+            FROM_UNIXTIME(
+                FLOOR(UNIX_TIMESTAMP(created_at) / 300) * 300,
+                '%%H:%%i'
+            ) AS time_label,
+            COUNT(DISTINCT session_id) AS visitors,
+            COUNT(DISTINCT CONCAT(session_id, '-', post_id)) AS pageviews
+         FROM $table
+         WHERE is_bot = 0 AND source = 'heartbeat'
+           AND created_at >= %s AND created_at < %s
+         GROUP BY time_label",
         $last_week_start,
         $last_week_end
     ) );
 
-    // Indeksér SQL-resultater i et opslags-array keyed på dag+tid
-    $buckets = array();
-    foreach ( $rows as $row ) {
-        $buckets[ $row->day . ' ' . $row->time_label ] = array(
+    // Indeksér resultater i opslags-arrays keyed på time_label
+    $buckets      = array();
+    $prev_buckets = array();
+
+    foreach ( $today_rows as $row ) {
+        $buckets[ $row->time_label ] = array(
+            'visitors'  => (int) $row->visitors,
+            'pageviews' => (int) $row->pageviews,
+        );
+    }
+    foreach ( $last_week_rows as $row ) {
+        $prev_buckets[ $row->time_label ] = array(
             'visitors'  => (int) $row->visitors,
             'pageviews' => (int) $row->pageviews,
         );
@@ -1598,16 +1615,14 @@ function lstats_get_today_history( WP_REST_Request $request ) {
     // Byg en fuld liste over alle 288 5-minutters-intervaller for hele døgnet (00:00-23:55)
     $history = array();
     for ( $i = 0; $i < 288; $i++ ) {
-        $time_label    = sprintf( '%02d:%02d', floor( $i / 12 ), ( $i % 12 ) * 5 );
-        $today_key     = $today_date . ' ' . $time_label;
-        $last_week_key = $last_week_date . ' ' . $time_label;
+        $time_label = sprintf( '%02d:%02d', floor( $i / 12 ), ( $i % 12 ) * 5 );
 
         $history[] = array(
             'time'          => $time_label,
-            'count'         => isset( $buckets[ $today_key ] ) ? $buckets[ $today_key ]['visitors'] : 0,
-            'pageviews'     => isset( $buckets[ $today_key ] ) ? $buckets[ $today_key ]['pageviews'] : 0,
-            'prevCount'     => isset( $buckets[ $last_week_key ] ) ? $buckets[ $last_week_key ]['visitors'] : 0,
-            'prevPageviews' => isset( $buckets[ $last_week_key ] ) ? $buckets[ $last_week_key ]['pageviews'] : 0,
+            'count'         => isset( $buckets[ $time_label ] ) ? $buckets[ $time_label ]['visitors'] : 0,
+            'pageviews'     => isset( $buckets[ $time_label ] ) ? $buckets[ $time_label ]['pageviews'] : 0,
+            'prevCount'     => isset( $prev_buckets[ $time_label ] ) ? $prev_buckets[ $time_label ]['visitors'] : 0,
+            'prevPageviews' => isset( $prev_buckets[ $time_label ] ) ? $prev_buckets[ $time_label ]['pageviews'] : 0,
         );
     }
 
@@ -2184,7 +2199,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.4.4';
+    $plugin_version = '2.4.5';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
