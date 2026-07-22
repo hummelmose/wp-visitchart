@@ -95,6 +95,21 @@
     line-height: 1;
 }
 
+.lstats-badge-slot {
+    flex-shrink: 0;
+    width: 22px;
+    min-width: 22px;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1;
+}
+
+.lstats-right-col {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
 .lstats-chart-wrap {
     flex: 1;
     min-height: 220px;
@@ -260,7 +275,7 @@
     font-weight: 600;
     color: #2271b1 !important;
     flex-shrink: 0;
-    min-width: 40px;
+    width: 64px;
     text-align: right;
 }
 
@@ -319,3 +334,9 @@
 /* 2.4.5 */
 /* 2.4.6 */
 /* 2.4.7 */
+/* 2.4.8 */
+/* 2.4.9 */
+/* 2.5.0 */
+/* 2.5.1 */
+
+/* v2.5.2 badge alignment fix */

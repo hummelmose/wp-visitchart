@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.4.7
+ * Version: 2.5.3
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -736,6 +736,18 @@ function lstats_render_mobile_page( $token ) {
             line-height: 1;
             margin: 0 2px;
         }
+        .badge-slot {
+            flex-shrink: 0;
+            width: 22px;
+            text-align: center;
+            font-size: 13px;
+            line-height: 1;
+        }
+        .right-col {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
         .refresh-note {
             text-align: center;
             font-size: 11px;
@@ -876,13 +888,12 @@ function lstats_render_mobile_page( $token ) {
                     data.pages.forEach(function (page, index) {
                         var li = document.createElement('li');
                         var num = String(index + 1).padStart(2, '0');
-                        var badge = page.trending ? '<span class="trending-badge" title="' + escapeHtml(i18n.trending) + '"><i class="fa-solid fa-fire"></i></span>' : '';
-                        var featuredBadge = page.featured ? ' <span class="featured-badge" title="' + escapeHtml(i18n.featured) + '">⭐</span>' : '';
+                        var badgeContent = page.trending
+                            ? '<i class="fa-solid fa-fire" style="color:#d63638;"></i>'
+                            : (page.featured ? '⭐' : '');
                         li.innerHTML = '<span class="page-title"><b>' + num + ':</b> ' +
                                         '<a href="' + escapeHtml(page.url) + '">' + escapeHtml(page.title) + '</a></span>' +
-                                        badge +
-                                        (page.featured ? '<span class="featured-badge">⭐</span>' : '') +
-                                        '<span class="count-num">' + formatNumber(page.live) + '</span>';
+                                        '<span class="right-col"><span class="badge-slot">' + badgeContent + '</span><span class="count-num">' + formatNumber(page.live) + '</span></span>';
                         list.appendChild(li);
                     });
                 }
@@ -1040,8 +1051,7 @@ function lstats_render_mobile_page( $token ) {
                     var num = String(index + 1).padStart(2, '0');
                     li.innerHTML = '<span class="page-title"><b>' + num + ':</b> ' +
                                     '<a href="' + escapeHtml(page.url) + '">' + escapeHtml(page.title) + '</a></span>' +
-                                    (page.featured ? '<span class="featured-badge">⭐</span>' : '') +
-                                    '<span class="count-num">' + formatNumber(page.visitors) + '</span>';
+                                    '<span class="right-col"><span class="badge-slot">' + (page.featured ? '⭐' : '') + '</span><span class="count-num">' + formatNumber(page.visitors) + '</span></span>';
                     list.appendChild(li);
                 });
             });
@@ -1914,7 +1924,9 @@ add_action( 'admin_head', function() {
         .toplevel_page_lstats-dashboard #wpcontent { padding-top: 0; }
         .toplevel_page_lstats-dashboard .wrap { padding-top: 58px; padding-bottom: 0; }
         .toplevel_page_lstats-dashboard .wrap > h1 { margin-top: 6px !important; margin-bottom: 6px !important; padding: 0 !important; }
-        .toplevel_page_lstats-dashboard .lstats-page-count { color: #2271b1 !important; font-weight: 600 !important; }
+        .toplevel_page_lstats-dashboard .lstats-page-count { color: #2271b1 !important; font-weight: 600 !important; width: 48px !important; text-align: right !important; flex-shrink: 0 !important; }
+        .toplevel_page_lstats-dashboard .lstats-badge-slot { width: 22px !important; min-width: 22px !important; flex-shrink: 0 !important; text-align: center !important; }
+        .toplevel_page_lstats-dashboard .lstats-right-col { display: flex !important; align-items: center !important; flex-shrink: 0 !important; }
     </style>';
 } );
 add_action( 'admin_menu', 'lstats_admin_menu' );
@@ -2237,7 +2249,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.4.7';
+    $plugin_version = '2.5.3';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
