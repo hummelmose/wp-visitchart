@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.4.5
+ * Version: 2.4.7
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -730,6 +730,12 @@ function lstats_render_mobile_page( $token ) {
             color: #d63638;
             margin: 0 4px;
         }
+        .featured-badge {
+            flex-shrink: 0;
+            font-size: 13px;
+            line-height: 1;
+            margin: 0 2px;
+        }
         .refresh-note {
             text-align: center;
             font-size: 11px;
@@ -812,7 +818,8 @@ function lstats_render_mobile_page( $token ) {
             mobile: <?php echo wp_json_encode( __( 'Mobil', 'wp-visitchart' ) ); ?>,
             tablet: <?php echo wp_json_encode( __( 'Tablet', 'wp-visitchart' ) ); ?>,
             desktop: <?php echo wp_json_encode( __( 'Desktop', 'wp-visitchart' ) ); ?>,
-            trending: <?php echo wp_json_encode( __( 'Trending', 'wp-visitchart' ) ); ?>
+            trending: <?php echo wp_json_encode( __( 'Trending', 'wp-visitchart' ) ); ?>,
+            featured: <?php echo wp_json_encode( __( 'Featured', 'wp-visitchart' ) ); ?>
         };
 
         function formatNumber(n) {
@@ -870,9 +877,11 @@ function lstats_render_mobile_page( $token ) {
                         var li = document.createElement('li');
                         var num = String(index + 1).padStart(2, '0');
                         var badge = page.trending ? '<span class="trending-badge" title="' + escapeHtml(i18n.trending) + '"><i class="fa-solid fa-fire"></i></span>' : '';
+                        var featuredBadge = page.featured ? ' <span class="featured-badge" title="' + escapeHtml(i18n.featured) + '">⭐</span>' : '';
                         li.innerHTML = '<span class="page-title"><b>' + num + ':</b> ' +
                                         '<a href="' + escapeHtml(page.url) + '">' + escapeHtml(page.title) + '</a></span>' +
                                         badge +
+                                        (page.featured ? '<span class="featured-badge">⭐</span>' : '') +
                                         '<span class="count-num">' + formatNumber(page.live) + '</span>';
                         list.appendChild(li);
                     });
@@ -1031,6 +1040,7 @@ function lstats_render_mobile_page( $token ) {
                     var num = String(index + 1).padStart(2, '0');
                     li.innerHTML = '<span class="page-title"><b>' + num + ':</b> ' +
                                     '<a href="' + escapeHtml(page.url) + '">' + escapeHtml(page.title) + '</a></span>' +
+                                    (page.featured ? '<span class="featured-badge">⭐</span>' : '') +
                                     '<span class="count-num">' + formatNumber(page.visitors) + '</span>';
                     list.appendChild(li);
                 });
@@ -1476,15 +1486,16 @@ function lstats_get_live_count( WP_REST_Request $request ) {
         _prime_post_caches( array_map( 'intval', $post_ids ), false, false );
     }
 
+    $featured_cat_id = (int) get_option( 'lstats_featured_category', 0 );
+
     $pages = array();
     foreach ( $per_page as $row ) {
         $title = html_entity_decode( get_the_title( $row->post_id ), ENT_QUOTES, 'UTF-8' );
         $live_count = (int) $row->live;
         $prev_count = isset( $previous_counts[ (int) $row->post_id ] ) ? $previous_counts[ (int) $row->post_id ] : 0;
 
-        // En side er "trending", hvis den har mindst 3 aktive besøgende lige nu,
-        // og besøgstallet er steget mindst 50% i forhold til det foregående tidsvindue
         $is_trending = ( $live_count >= 3 && $live_count >= ( $prev_count * 1.5 ) && $live_count > $prev_count );
+        $is_featured = $featured_cat_id > 0 && has_term( $featured_cat_id, 'category', $row->post_id );
 
         $pages[] = array(
             'post_id'   => (int) $row->post_id,
@@ -1492,6 +1503,7 @@ function lstats_get_live_count( WP_REST_Request $request ) {
             'live'      => $live_count,
             'url'       => get_permalink( $row->post_id ),
             'trending'  => $is_trending,
+            'featured'  => $is_featured,
         );
     }
 
@@ -1661,14 +1673,18 @@ function lstats_get_top_pages( WP_REST_Request $request ) {
     $post_ids = wp_list_pluck( $rows, 'post_id' );
     _prime_post_caches( array_map( 'intval', $post_ids ), false, false );
 
+    $featured_cat_id = (int) get_option( 'lstats_featured_category', 0 );
+
     $pages = array();
     foreach ( $rows as $row ) {
         $title = html_entity_decode( get_the_title( $row->post_id ), ENT_QUOTES, 'UTF-8' );
+        $is_featured = $featured_cat_id > 0 && has_term( $featured_cat_id, 'category', $row->post_id );
         $pages[] = array(
             'post_id'  => (int) $row->post_id,
             'title'    => $title ? $title : ( '#' . $row->post_id ),
             'visitors' => (int) $row->visitors,
             'url'      => get_permalink( $row->post_id ),
+            'featured' => $is_featured,
         );
     }
 
@@ -1935,6 +1951,7 @@ function lstats_handle_save_settings() {
     update_option( 'lstats_mobile_enabled', isset( $_POST['lstats_mobile_enabled'] ) ? '1' : '0' );
     update_option( 'lstats_post_views_enabled', isset( $_POST['lstats_post_views_enabled'] ) ? '1' : '0' );
     update_option( 'lstats_exclude_logged_in', isset( $_POST['lstats_exclude_logged_in'] ) ? '1' : '0' );
+    update_option( 'lstats_featured_category', absint( $_POST['lstats_featured_category'] ?? 0 ) );
 
     wp_safe_redirect( admin_url( 'admin.php?page=lstats-settings&lstats_settings_saved=1' ) );
     exit;
@@ -1981,11 +1998,12 @@ function lstats_render_dashboard() {
  * Render-funktion for indstillingssiden
  */
 function lstats_render_settings_page() {
-    $admin_bar_enabled  = lstats_is_admin_bar_enabled();
-    $mobile_enabled     = lstats_is_mobile_site_enabled();
-    $post_views_enabled = lstats_is_post_views_enabled();
-    $exclude_logged_in  = lstats_exclude_logged_in_users();
-    $mobile_url         = add_query_arg( 'lstats_mobile', get_option( 'lstats_public_token' ), home_url( '/' ) );
+    $admin_bar_enabled     = lstats_is_admin_bar_enabled();
+    $mobile_enabled        = lstats_is_mobile_site_enabled();
+    $post_views_enabled    = lstats_is_post_views_enabled();
+    $exclude_logged_in     = lstats_exclude_logged_in_users();
+    $featured_category_id  = (int) get_option( 'lstats_featured_category', 0 );
+    $mobile_url            = add_query_arg( 'lstats_mobile', get_option( 'lstats_public_token' ), home_url( '/' ) );
     ?>
     <div class="wrap">
         <h1><?php esc_html_e( 'WP VisitChart - Indstillinger', 'wp-visitchart' ); ?></h1>
@@ -2046,6 +2064,26 @@ function lstats_render_settings_page() {
                             <?php esc_html_e( 'Tæl ikke besøg fra indloggede WordPress-brugere', 'wp-visitchart' ); ?>
                         </label>
                         <p class="description"><?php esc_html_e( 'Slået til stopper heartbeat og sidevisnings-ping helt for indloggede brugere. Anbefales på redaktionelle sites, så redaktørers og forfatteres egne sidebesøg ikke tæller med i statistikken.', 'wp-visitchart' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e( 'Featured kategori', 'wp-visitchart' ); ?></th>
+                    <td>
+                        <select name="lstats_featured_category">
+                            <option value="0"><?php esc_html_e( '— Ingen —', 'wp-visitchart' ); ?></option>
+                            <?php
+                            $categories = get_categories( array( 'hide_empty' => false, 'orderby' => 'name', 'order' => 'ASC' ) );
+                            foreach ( $categories as $cat ) {
+                                printf(
+                                    '<option value="%d"%s>%s</option>',
+                                    $cat->term_id,
+                                    selected( $featured_category_id, $cat->term_id, false ),
+                                    esc_html( $cat->name )
+                                );
+                            }
+                            ?>
+                        </select>
+                        <p class="description"><?php esc_html_e( 'Artikler i denne kategori vises med ⭐ i "Mest aktive sider" og "Mest besøgte sider".', 'wp-visitchart' ); ?></p>
                     </td>
                 </tr>
             </table>
@@ -2199,7 +2237,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.4.5';
+    $plugin_version = '2.4.7';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
@@ -2235,6 +2273,7 @@ function lstats_enqueue_admin( $hook ) {
             'tablet'             => __( 'Tablet', 'wp-visitchart' ),
             'desktop'            => __( 'Desktop', 'wp-visitchart' ),
             'trending'           => __( 'Trending', 'wp-visitchart' ),
+            'featured'           => __( 'Featured', 'wp-visitchart' ),
         ),
     ) );
 }

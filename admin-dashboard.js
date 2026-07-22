@@ -99,8 +99,10 @@
                 var li = document.createElement('li');
                 var num = String(index + 1).padStart(2, '0');
                 var badge = page.trending ? ' <span class="lstats-trending-badge" title="' + escapeHtml(lstatsAdmin.i18n.trending) + '"><i class="fa-solid fa-fire"></i></span>' : '';
+                var featuredBadge = page.featured ? ' <span class="lstats-featured-badge" title="' + escapeHtml(lstatsAdmin.i18n.featured) + '">⭐</span>' : '';
                 li.innerHTML = '<span class="lstats-page-title"><span class="lstats-num">' + num + ':</span> ' +
                                 '<a href="' + escapeHtml(page.url) + '" target="_blank" rel="noopener">' + escapeHtml(page.title) + '</a>' + badge + '</span>' +
+                                (page.featured ? '<span class="lstats-featured-badge">⭐</span>' : '') +
                                 '<span class="lstats-page-count">' + formatNumber(page.live) + '</span>';
                 list.appendChild(li);
             });
@@ -262,6 +264,7 @@
                 var num = String(index + 1).padStart(2, '0');
                 li.innerHTML = '<span class="lstats-page-title"><span class="lstats-num">' + num + ':</span> ' +
                                 '<a href="' + escapeHtml(page.url) + '" target="_blank" rel="noopener">' + escapeHtml(page.title) + '</a></span>' +
+                                (page.featured ? '<span class="lstats-featured-badge">⭐</span>' : '') +
                                 '<span class="lstats-page-count">' + formatNumber(page.visitors) + '</span>';
                 list.appendChild(li);
             });
@@ -384,3 +387,5 @@
 // 2.4.2
 // 2.4.3
 // 2.4.5
+// 2.4.6
+// 2.4.7

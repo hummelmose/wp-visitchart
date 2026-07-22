@@ -89,6 +89,12 @@
     color: #d63638;
 }
 
+.lstats-featured-badge {
+    flex-shrink: 0;
+    font-size: 13px;
+    line-height: 1;
+}
+
 .lstats-chart-wrap {
     flex: 1;
     min-height: 220px;
@@ -311,3 +317,5 @@
 /* 2.4.2 */
 /* 2.4.3 */
 /* 2.4.5 */
+/* 2.4.6 */
+/* 2.4.7 */
