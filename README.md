@@ -47,4 +47,4 @@ This project is released into the public domain under [The Unlicense](LICENSE).
 
 ## Author
 
-Jens E. Hummelmose — Copyright © 2026
+Jens E. Hummelmose — 2026
