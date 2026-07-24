@@ -1,250 +1,329 @@
-# WP VisitChart – Brugermanual
+# WP VisitChart — Komplet Brugermanual
 
-**Version:** 1.9.2  
-**Forfatter:** Jens E. Hummelmose  
-**Copyright:** © 2026 Jens E. Hummelmose
+> Version 2.5.5 · Lavet af Jens Hummelmose · Public Domain (Unlicense)
+> GitHub: [hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)
 
 ---
 
 ## Indholdsfortegnelse
 
-1. [Hvad er WP VisitChart?](#hvad-er-wp-visitchart)
-2. [Installation og aktivering](#installation-og-aktivering)
-3. [Dashboardet](#dashboardet)
-4. [Indstillinger](#indstillinger)
-5. [Mobilsiden](#mobilsiden)
-6. [Admin-bjælken](#admin-bjælken)
-7. [Sidevisninger i indlægsoversigten](#sidevisninger-i-indlægsoversigten)
-8. [Sådan indsamles data](#sådan-indsamles-data)
-9. [Hvad de forskellige tal betyder](#hvad-de-forskellige-tal-betyder)
-10. [Kendte begrænsninger](#kendte-begrænsninger)
+1. [Introduktion](#1-introduktion)
+2. [Systemkrav](#2-systemkrav)
+3. [Installation](#3-installation)
+4. [Opgradering](#4-opgradering)
+5. [Admin-dashboardet](#5-admin-dashboardet)
+6. [Mobilsiden](#6-mobilsiden)
+7. [WordPress Dashboard-widget](#7-wordpress-dashboard-widget)
+8. [Admin bar-tæller](#8-admin-bar-tæller)
+9. [Sidevisnings-kolonne i indlægsoversigten](#9-sidevisnings-kolonne-i-indlægsoversigten)
+10. [Indstillinger](#10-indstillinger)
+11. [Badges: Trending og Featured](#11-badges-trending-og-featured)
+12. [Data og privatliv](#12-data-og-privatliv)
+13. [Databasetabeller](#13-databasetabeller)
+14. [Ydeevne og caching](#14-ydeevne-og-caching)
+15. [Kompatibilitet](#15-kompatibilitet)
+16. [Ofte stillede spørgsmål](#16-ofte-stillede-spørgsmål)
 
 ---
 
-## Hvad er WP VisitChart?
+## 1. Introduktion
 
-WP VisitChart er et selvbygget WordPress-plugin til live-trafikovervågning, inspireret af professionelle analytics-værktøjer som Chartbeat. Det viser i realtid, hvem der er på sitet lige nu, hvad de læser, og hvordan dagens trafik udvikler sig – direkte i WordPress-admin, på en bookmarkbar mobilside og i selve admin-bjælken øverst på skærmen.
+WP VisitChart er et selvhosted realtids-analyticsplugin til WordPress inspireret af Chartbeat. Det viser live besøgstal, dagens trafikgraf sammenlignet med samme ugedag ugen før, trafikkilder, enhedsstatistik, trending artikler og sidevisningsstatistik per indlæg — alt kørende udelukkende på din egen server uden tredjeparts-tjenester, abonnementer eller data der forlader dit site.
 
-Pluginet kræver ingen tredjepartstjenester, ingen abonnementer og sender ikke data ud af dit site. Alt kører på din egen server.
-
----
-
-## Installation og aktivering
-
-1. Upload `wp-visitchart.zip` via **Plugins → Tilføj plugin → Upload plugin**
-2. Aktiver pluginet
-3. WordPress opretter automatisk de nødvendige databasetabeller
-4. Gå til **WP VisitChart** i venstre admin-menu
-
-Pluginet begynder at indsamle data med det samme efter aktivering. Der er ingen opsætningsguide – standardindstillingerne virker med det samme.
-
-**Vigtigt ved opgradering fra WP VisiChart:** Da plugin-mappen er omdøbt, skal du deaktivere og slette det gamle plugin, inden du installerer WP VisitChart. Dine eksisterende data bevares, da databasetabellerne har samme navne.
+**Nøgleprincipper:**
+- Al data gemmes i din egen database
+- Ingen eksterne analytics-tjenester eller sporingspixels
+- Ingen cookies nødvendige til kernefunktionaliteten
+- Public domain (Unlicense) — brug det som du vil
 
 ---
 
-## Dashboardet
+## 2. Systemkrav
 
-Find dashboardet under **WP VisitChart** i venstre admin-menu.
-
-### Live besøgende lige nu
-
-Det store, blå tal øverst viser antallet af unikke besøgende, der har sendt et aktivt signal fra deres browser inden for de seneste 120 sekunder. Tallet opdaterer sig automatisk hvert 10. sekund og blinker kortvarigt, når det ændrer sig.
-
-### Trafikkilder i dag
-
-Viser fordelingen af dagens trafik i fire kategorier med antal og procentandel:
-
-- **Direkte** – besøgende der kom via bogmærke, ved at skrive URL'en direkte, eller fra apps der ikke sender kildeoplysninger
-- **Søgemaskiner** – trafik fra Google, Bing, DuckDuckGo m.fl.
-- **Sociale medier** – trafik fra Facebook, Instagram, X/Twitter, LinkedIn, Reddit, TikTok m.fl.
-- **Andre hjemmesider** – trafik via links på andre sites
-
-### Enheder i dag
-
-Opdeling af dagens besøgende på enhedstype – mobil, tablet og desktop – med antal og procentandel. Enhedstypen bestemmes ud fra skærmbredden i besøgendes browser.
-
-### Gns. tid på sitet
-
-Den gennemsnitlige aktive tid, besøgende bruger på sitet i dag. Beregnes ud fra heartbeat-signaler og tæller kun aktive perioder – pauser, hvor fanen lå i baggrunden, tælles ikke med.
-
-### Grafen – Besøgende i dag
-
-Linjegrafen viser dagens trafik time for time i 5-minutters-intervaller fra 00:00 til 23:55:
-
-- **Blå linje** – unikke besøgende i dag
-- **Rød stiplet linje** – sidevisninger i dag (kan overstige besøgende, da én person kan læse flere artikler)
-- **Grå linjer** – samme to tal fra **samme ugedag sidste uge** som sammenligningsgrundlag
-
-Fører du musen over grafen, vises en lodret streg og en boks med alle fire tal for det pågældende 5-minutters-interval, f.eks. "08:40 – 08:45".
-
-### Mest aktive sider lige nu
-
-De ti sider med flest aktive besøgende i det aktuelle 120-sekunders-vindue. Klik på en artikel-titel for at åbne den. Sider, der stiger hurtigt i besøgstal, markeres automatisk med et 🔥-ikon (trending).
-
-**Trending:** En side markeres som trending, hvis den har mindst 3 aktive besøgende lige nu og besøgstallet er steget mindst 50 % i forhold til det foregående tidsvindue.
-
-### Mest besøgte sider i dag
-
-De femten sider med flest unikke besøgende i løbet af hele dagen – ikke kun i det seneste vindue.
-
-### Bots registreret
-
-Antal bots og crawlere registreret i dag, samt en liste over de senest aktive bots med navn og antal sessioner. Bots filtreres fra i alle de øvrige tal, så de ikke forurener statistikken.
-
-### Mest henvisende domæner
-
-Hvilke konkrete domæner (f.eks. google.com, facebook.com, version2.dk) der har sendt flest besøgende i dag. Se afsnit om [trafikkilde-detection](#trafikkilde-detection) nedenfor for en forklaring af, hvordan dette tal beregnes.
+| Krav | Mindste version |
+|---|---|
+| WordPress | 5.8 |
+| PHP | 7.4 |
+| MySQL | 5.7 |
+| MariaDB | 10.3 |
 
 ---
 
-## Indstillinger
+## 3. Installation
 
-Find indstillingerne under **WP VisitChart → Indstillinger**.
+1. Download `wp-visitchart.zip` fra [Releases-siden](https://github.com/hummelmose/wp-visitchart/releases)
+2. Gå til **Plugins → Tilføj plugin → Upload plugin** i WordPress-admin
+3. Vælg zip-filen og klik **Installer nu**
+4. Klik **Aktivér plugin**
+5. Gå til **WP VisitChart** i venstre admin-menu
 
-### Admin-bjælke
+Pluginnet opretter automatisk tre databasetabeller ved aktivering: `wp_lstats_heartbeats`, `wp_lstats_sessions` og `wp_lstats_post_views`.
 
-Slår live-tælleren til eller fra i WordPress' sorte admin-bjælke øverst på skærmen.
+---
 
-- **Slået til:** Et lille tal viser live-besøgende øverst, synligt på alle sider i wp-admin og på selve sitet, når du er logget ind som administrator. Klik på tallet for at gå direkte til dashboardet.
-- **Slået fra:** Tælleren fjernes helt fra admin-bjælken.
+## 4. Opgradering
+
+1. Download den seneste `wp-visitchart.zip` fra [Releases-siden](https://github.com/hummelmose/wp-visitchart/releases)
+2. Gå til **Plugins → Tilføj plugin → Upload plugin**
+3. Upload zip-filen og klik **Erstat nuværende med uploadet**
+4. Aktivér pluginnet
+
+Databaseskema-ændringer anvendes automatisk. Ingen manuel SQL er nødvendig.
+
+**Bemærk:** `lstats_sessions`-tabellen (v2.3.0+) fyldes fra det første besøg efter opgradering. Trafikkilder genopfyldes inden for få minutter.
+
+---
+
+## 5. Admin-dashboardet
+
+Gå til **WP VisitChart** i venstre admin-menu. Dashboardet opdaterer automatisk al data.
+
+### 5.1 Sticky live-bjælke
+
+En fast bjælke øverst viser det aktuelle antal live-besøgende til enhver tid. Tallet blinker kortvarigt når det ændrer sig og forbliver synligt mens du scroller.
+
+**Opdateringsinterval:** Hvert 10. sekund.
+
+**Hvad tæller:** Unikke browsersessioner med et heartbeat inden for de seneste 120 sekunder.
+
+### 5.2 Trafikgraf
+
+Fuldbredde-graf med besøgende og sidevisninger i 5-minutters intervaller for i dag, sammenlignet med samme ugedag fra ugen før.
+
+| Linje | Beskrivelse |
+|---|---|
+| Blå hel | Unikke besøgende i dag |
+| Rød stiplet | Sidevisninger i dag |
+| Grå hel | Unikke besøgende, samme ugedag sidste uge |
+| Grå stiplet | Sidevisninger, samme ugedag sidste uge |
+
+Rør grafen for at se præcise tal. På mobilsiden lukker tooltip automatisk 5 sekunder efter du løfter fingeren.
+
+**Opdateringsinterval:** Hvert 60. sekund. **Dataopbevaring:** 8 dage.
+
+### 5.3 Mest aktive sider lige nu
+
+Top 10 sider med aktive besøgende i det aktuelle 120-sekunders vindue.
+
+Badges: 🔥 **Trending** (mindst 3 aktive + 50% vækst) · ⭐ **Featured** (valgt kategori i indstillinger)
+
+**Opdateringsinterval:** Hvert 10. sekund.
+
+### 5.4 Mest besøgte sider i dag
+
+Top 20 sider efter sidevisninger siden midnat. Baseret på JavaScript-pings — ét ping per session per artikel.
+
+⭐ **Featured-badge** vises for artikler i den valgte Featured-kategori.
+
+**Opdateringsinterval:** Hvert 60. sekund.
+
+### 5.5 Trafikkilder i dag
+
+Fordeling af unikke sessioner siden midnat:
+
+| Kategori | Hvad den inkluderer |
+|---|---|
+| **Direkte** | Ingen referrer eller intern navigation |
+| **Søgemaskiner** | Google, Bing, Yahoo, DuckDuckGo, Yandex, Baidu m.fl. |
+| **Sociale medier** | Facebook (inkl. fbclid), Instagram, Twitter/X, LinkedIn, Reddit, TikTok, Pinterest, YouTube |
+| **Andre hjemmesider** | Alle andre eksterne referrers |
+
+UTM-parametre har forrang over referrer-headeren.
+
+**Opdateringsinterval:** Hvert 60. sekund.
+
+### 5.6 Enheder i dag
+
+Fordeling af unikke sessioner siden midnat efter enhedstype (Mobil, Tablet, Desktop).
+
+**Opdateringsinterval:** Hvert 60. sekund.
+
+### 5.7 Bots registreret
+
+Viser bot-user-agents detekteret i de seneste 120 sekunder. Bots identificeres via user-agent matching mod kendte crawlere inkl. Googlebot, Bingbot, AhrefsBot, SemrushBot, GPTBot, ClaudeBot m.fl.
+
+**Opdateringsinterval:** Hvert 10. sekund.
+
+### 5.8 Mest henvisende domæner
+
+Top 15 eksterne domæner der sendte besøgende i dag. Facebook fbclid-links mærkes `facebook.com (fbclid)`. UTM-sources vises med ` (utm)` suffix.
+
+**Opdateringsinterval:** Hvert 60. sekund.
+
+---
+
+## 6. Mobilsiden
+
+Selvstændig side uden login-krav til bogmærke på telefon eller startskærm. Viser de samme live-data i mobiloptimeret layout.
+
+**Adgang:** Find URL under **WP VisitChart → Indstillinger** og kopier den med clipboard-ikonet.
+
+**Sikkerhed:** Beskyttet af et hemmeligt token i URL'en. Nulstil tokenet i Indstillinger for at ugyldiggøre den gamle URL.
+
+**Layout (fra top):**
+1. Sticky live-besøgstal
+2. Trafikgraf med tooltip (auto-lukker 5 sek. efter du løfter fingeren)
+3. Mest aktive sider (med 🔥 og ⭐)
+4. Mest besøgte i dag (med ⭐)
+5. Trafikkilder i dag
+6. Enheder i dag
+7. Bots registreret
+8. Mest henvisende domæner
+
+---
+
+## 7. WordPress Dashboard-widget
+
+Widget med titlen **WP VisitChart – Top 20 i dag** på WordPress-dashboardet (`/wp-admin/`).
+
+| Kolonne | Beskrivelse |
+|---|---|
+| Artikel | Nummer og titel, linket til indlægget |
+| I dag | Sidevisninger i dag (blå, fed) — sorteringskolonne |
+| Total | Samlede sidevisninger inkl. i dag |
+
+Link til WP VisitChart-dashboardet vises nederst. Vises kun når **Sidevisnings-kolonne** er aktiveret i Indstillinger.
+
+---
+
+## 8. Admin bar-tæller
+
+Live besøgstal i WordPress' admin-bjælke, synligt på alle admin-sider og på frontend når du er logget ind. Klik for at gå til dashboardet. Opdateres hvert 10. sekund. Kan slås til/fra i Indstillinger.
+
+---
+
+## 9. Sidevisnings-kolonne i indlægsoversigten
+
+Graf-ikon-kolonne i indlægs- og sidesoversigten med sidevisningsstatistik per artikel. Kan sorteres. Bruger ét JavaScript-ping per session per artikel.
+
+`views_today` overføres til `views_total` ved dagsstart på det første besøg.
+
+---
+
+## 10. Indstillinger
+
+Gå til **WP VisitChart → Indstillinger**.
+
+### Admin bar-tæller
+Aktivér/deaktivér live besøgstal i admin-bjælken. **Standard:** Aktiveret.
 
 ### Mobilside
+Aktivér/deaktivér den offentlige mobilstatistikside. URL vises med clipboard-kopieringsknap. **Nulstil adgangskode** genererer et nyt token og ugyldiggør den gamle URL. **Standard:** Aktiveret.
 
-Slår den login-frie mobilside til eller fra.
+### Sidevisnings-kolonne
+Aktivér/deaktivér sidevisnings-kolonnen i indlægsoversigten, dashboard-widget'en og sidevisnings-sporingen. **Standard:** Aktiveret.
 
-- **Slået til:** Mobilsiden er tilgængelig via det hemmelige link under "Mobilside – adgang" nedenfor på siden.
-- **Slået fra:** Mobilsiden viser en fejlmeddelelse, selv med det korrekte link.
+### Udelad indloggede brugere
+Udelad indloggede WordPress-brugere fuldstændigt fra al sporing. Anbefales på redaktionelle sites. **Standard:** Deaktiveret.
 
-### Sidevisninger i indlægsoversigten
-
-Slår en ekstra kolonne til i WordPress' Posts- og Pages-oversigt.
-
-- **Slået til:** Kolonnen "Sidevisninger" vises med dagens og samlede sidevisninger for hvert indlæg. Kolonnen kan sorteres.
-- **Slået fra:** Kolonnen skjules. Eksisterende data i databasen bevares.
-
-Sidevisninger tælles i realtid via et separat JavaScript-ping, der fyrer præcis én gang per session per artikel – uanset om besøget er kort eller langt.
-
-### Mobilside – adgang
-
-Her finder du linket til mobilsiden med den hemmelige adgangskode i URL'en, samt en knap til at **nulstille adgangskoden**. Klikker du "Nulstil adgangskode", genereres en ny kode øjeblikkeligt, og det gamle link holder op med at virke. Brug dette, hvis du har delt linket for bredt eller mistænker misbrug.
+### Featured-kategori
+Vælg én WordPress-kategori. Artikler i den valgte kategori vises med ⭐ i artiklellister. Vælg **— Ingen —** for at deaktivere. **Standard:** Ingen.
 
 ---
 
-## Mobilsiden
+## 11. Badges: Trending og Featured
 
-Mobilsiden er en selvstændig, letvægts side, du kan bogmærke på din telefon eller tilføje til din hjemmeskærm – uden at skulle logge ind på WordPress.
+Badges vises mellem artiklens titel og besøgstallet så de altid er synlige uanset skærmbredde.
 
-**Link-format:**
-```
-https://ditsite.dk/?lstats_mobile=DIN-HEMMELIGE-KODE
-```
+### 🔥 Trending-badge
+Vises kun i **Mest aktive sider lige nu** når alle disse betingelser er opfyldt:
+- Mindst 3 aktive besøgende lige nu
+- Besøgstallet er mindst 50% højere end i det foregående 120-sekunders vindue
+- Besøgstallet er strengt højere end det foregående
 
-Find linket under **WP VisitChart → Indstillinger → Mobilside – adgang**.
-
-Mobilsiden viser de samme informationer som dashboardet, men tilpasset en lille skærm. Live-besøgstallet sidder fastlåst i toppen og forbliver synligt, selv når du scroller ned gennem listerne.
-
-**Sikkerhed:** Siden er ikke beskyttet af login, men af den hemmelige kode i URL'en. Del ikke linket offentligt.
+### ⭐ Featured-badge
+Vises i **Mest aktive sider** og **Mest besøgte sider i dag** når artiklen tilhører Featured-kategorien valgt i Indstillinger.
 
 ---
 
-## Admin-bjælken
+## 12. Data og privatliv
 
-Når funktionen er aktiveret i indstillinger, vises et lille tal med et graf-ikon i WordPress' sorte admin-bjælke. Det viser det samme tal som "Live besøgende lige nu" på dashboardet og opdaterer sig hvert 10. sekund.
+**Hvad indsamles:** Sessions-ID (sessionStorage, ikke cookie), side-URL, referrer-URL, user-agent streng, IP-adresse (kun server-side til sessions-ID, gemmes ikke), tidsstempel.
 
-Admin-bjælke-tælleren er synlig:
-- På alle sider i wp-admin
-- På selve sitet, når du er logget ind som administrator
+**Opbevaring:** Al data i din egen WordPress-database. Heartbeats og sessionsdata slettes efter 8 dage. Sidevisningstal gemmes på ubestemt tid.
 
-Et klik på tælleren fører direkte til dashboardet.
+**Cookies:** Ingen. Sessions-ID'er gemmes i browserens `sessionStorage` og ryddes når fanen lukkes.
 
----
-
-## Sidevisninger i indlægsoversigten
-
-Når funktionen er slået til i indstillinger, vises kolonnen **"Sidevisninger"** i WordPress' Posts- og Pages-oversigt.
-
-Kolonnen viser:
-- **Stort tal** – samlede sidevisninger for dette indlæg (inkl. i dag)
-- **"i dag: X"** – sidevisninger alene i dag
-
-Klik på kolonneoverskriften **"Sidevisninger"** for at sortere hele oversigten efter popularitet.
-
-**Vigtigt:** Kolonnen skal aktiveres i WordPress' Skærmindstillinger (øverst til højre på oversigt-siden) for at være synlig. Sæt hak i "Sidevisninger" i listen over tilgængelige kolonner.
-
-### Sådan tælles sidevisninger
-
-Sidevisninger bruger et separat JavaScript-ping, der er uafhængigt af heartbeat-systemet:
-
-- Ping'et fyrer præcis **én gang per session per artikel**
-- `sessionStorage` sikrer, at genindlæsning eller navigation væk og tilbage ikke dobbelttæller
-- Bots og crawlere filtreres fra via user-agent-tjek
-- Ingen cron-jobs – alt opdateres direkte i databasen ved hvert besøg
-
-**Daglig rollover:** Første besøg på en artikel efter midnat lukker automatisk gårsdagens "i dag"-tal ind i totalen og starter forfra. Der kræves ingen manuel handling eller planlagt opgave.
+**Bot-trafik:** Kendte bots udelades fra al besøgsstatistik og vises separat.
 
 ---
 
-## Sådan indsamles data
+## 13. Databasetabeller
 
-WP VisitChart bruger tre metoder til at indsamle trafikdata:
+### `wp_lstats_heartbeats`
+Rådata fra heartbeat-signaler. Kolonnerne inkluderer: `id`, `post_id`, `session_id`, `url`, `is_bot`, `source`, `user_agent`, `referrer`, `device_type`, `created_at`.
 
-### 1. Heartbeat (JavaScript)
-Et lille script kører i baggrunden på alle sider og sender et signal hvert 12. sekund, så længe besøgende har fanen åben og aktiv. Pauser automatisk, når fanen skjules (besøgende skifter til en anden fane). Dette er kilden til live-tallet, grafen og de aktive sider.
+Indekser: `idx_bot_source_time (is_bot, source, created_at)`, `idx_graph_covering (is_bot, source, created_at, session_id, post_id)` m.fl.
 
-### 2. Sidevisnings-ping (JavaScript)
-Et separat, enkelt signal der kun sendes én gang, første gang en besøgende åbner en given artikel i en session. Bruges udelukkende til sidevisnings-kolonnen i indlægsoversigten.
+**Opbevaring:** 8 dage.
 
-### 3. Server-side logging
-Hvert sideopkald logges direkte af serveren, uanset om JavaScript kører. Fanger besøgende og bots, som heartbeat-scriptet aldrig ser.
+### `wp_lstats_sessions`
+Én række per unik session skrevet med `INSERT IGNORE` på første heartbeat. Kolonnerne inkluderer: `session_id` (PK), `referrer`, `url`, `device_type`, `is_bot`, `category`, `domain`, `count_date`, `first_seen`.
 
-### Trafikkilde-detection
+**Opbevaring:** 8 dage.
 
-Kildedetektion sker i denne rækkefølge:
+### `wp_lstats_post_views`
+Daglige og samlede sidevisninger per artikel. Kolonnerne inkluderer: `post_id` (PK), `views_today`, `views_total`, `count_date`, `updated_at`.
 
-1. **`fbclid`-parameteren i URL'en** – Facebook-links indeholder altid denne parameter, selv når browseren ikke sender referrer-information. Giver pålidelig Facebook-detektion.
-2. **`utm_source`-parameteren** – frivillige UTM-mærker i links, f.eks. fra nyhedsbreve eller sociale kampagner.
-3. **Referrer-headeren** – browserens oplysning om, hvilken side den besøgende kom fra.
-4. **Ingen af ovenstående** – tæller som Direkte.
-
-Resultatet kategoriseres som Søgemaskiner, Sociale medier, Andre hjemmesider eller Direkte.
-
-### Data-opbevaring
-
-Rå heartbeat-data gemmes i **8 dage** og ryddes automatisk derefter. 8 dage er nødvendigt for at kunne vise sammenligningen med "samme ugedag sidste uge" i grafen.
-
-Sidevisningsdata i `lstats_post_views`-tabellen bevares uden tidsbegrænsning og ryddes ikke automatisk.
+**Bemærk:** Det sande samlede total for en aktiv dag er `views_total + views_today`. `views_today` overføres til `views_total` ved dagsstart.
 
 ---
 
-## Hvad de forskellige tal betyder
+## 14. Ydeevne og caching
 
-| Tal | Hvad det måler | Opdateres |
-|---|---|---|
-| Live besøgende | Unikke sessions med heartbeat de seneste 120 sek. | Hvert 10. sek. |
-| Trafikkilder i dag | Unikke sessions opdelt efter kilde | Hvert 60. sek. |
-| Enheder i dag | Unikke sessions opdelt efter skærmbredde | Hvert 60. sek. |
-| Gns. tid på sitet | Aktiv tid baseret på heartbeat-intervaller | Hvert 60. sek. |
-| Graf – i dag | Unikke sessions per 5-minutters-interval | Hvert 60. sek. |
-| Graf – sidste uge | Samme beregning, 7 dage tilbage | Hvert 60. sek. |
-| Sidevisninger (kolonne) | Sessions-unikke sideindlæsninger per artikel | I realtid |
-| Bots | Registrerede bot-sessioner i dag | Hvert 60. sek. |
+| Data | Cache-varighed |
+|---|---|
+| Live besøgstal | 8 sekunder |
+| Trafikgrafdata | 30 sekunder |
+| Mest besøgte i dag | 30 sekunder |
+| Trafikkilder og domæner | 30 sekunder |
+| Enhedsfordeling | 30 sekunder |
 
----
+**WP Rocket:** REST-endpoints er udelukket fra side-cache og preloader. Transients ryddes automatisk ved indlægspublicering. Kritisk CSS leveres via `admin_head` inline styles immune over for WP Rockets CSS-optimering.
 
-## Kendte begrænsninger
+**Redis/Memcached:** `wp_cache_delete()` kaldes uden gruppe-parameter efter hvert transient-write for korrekt eviction.
 
-**"Direkte" trafik er ofte overvurderet.** Mange browsere og apps sender ikke referrer-information af privatlivshensyn, selv når besøgende klikker på et link. Disse tæller som Direkte, selvom de reelt kom fra et andet sted.
-
-**Live-tallet og grafen måler ikke det samme.** Live-tallet bruger et glidende 120-sekunders-vindue. Grafen bruger 5-minutters-buckets. De to tal er ikke direkte sammenlignelige.
-
-**Gennemsnitlig tid er en tilnærmelse.** Beregnes ud fra mellemrum mellem heartbeats. Besøg, der er kortere end 12 sekunder, registreres ikke som aktiv tid. Fanepauser over 60 sekunder tæller ikke med.
-
-**WP Cron er ikke en rigtig systemcron.** Heartbeat-oprydning og andre planlagte opgaver udløses kun, når nogen besøger sitet. På et site med lav nattrafik kan der gå op til et par timer, inden en planlagt opgave faktisk kører.
-
-**Bot-detektion er ikke 100 %.** Avancerede bots, der udgiver sig for at være almindelige browsere, kan glide igennem filteret og tælle som rigtige besøgende.
-
-**Sidevisnings-ping kræver JavaScript.** Besøgende uden JavaScript, bots og crawlere registreres ikke som sidevisninger i kolonnen, da ping'et er JavaScript-baseret.
+**Covering index:** `idx_graph_covering` giver graf-queryen mulighed for at løses udelukkende fra indekset. Trafikkildeforespørgsler kører mod `lstats_sessions` (~25.000 rækker) i stedet for `lstats_heartbeats` (millioner af rækker).
 
 ---
 
-*WP VisitChart 1.9.2 – Copyright © 2026 Jens E. Hummelmose*
+## 15. Kompatibilitet
+
+| Plugin/System | Kompatibel |
+|---|---|
+| WP Rocket | ✅ Ja |
+| Cloudflare | ✅ Ja |
+| W3 Total Cache | ✅ Ja |
+| Redis / Memcached | ✅ Ja |
+| Google Analytics / Matomo | ✅ Ja (kører uafhængigt) |
+| WordPress Multisite | ⚠️ Ikke testet |
+
+---
+
+## 16. Ofte stillede spørgsmål
+
+**Hvorfor er mit live besøgstal højere end Matomo?**
+Live-tællere og traditionelle analytics måler fundamentalt forskelligt. WP VisitChart tæller sessioner aktive i 120 sekunder — en session udløber når en fane lukkes. Et tal 1,5–2× højere end Matomo er forventet.
+
+**Hvorfor er trafikkildedata tomme efter opgradering?**
+`lstats_sessions` fyldes fra første besøg efter opgradering og genopfyldes inden for få minutter.
+
+**Hvorfor er "Total" lavere end "I dag" i widget'en?**
+`views_total` inkluderer ikke i dag endnu — de lægges til ved midnat. Widget'en viser `views_total + views_today` som korrekt total.
+
+**Virker pluginnet uden WP Rocket?**
+Ja. WP Rocket-hooks fyrer kun hvis WP Rocket er installeret.
+
+**Kan jeg bruge dette på flere sites?**
+Ja. Installer uafhængigt på hvert site.
+
+**Hvordan stopper jeg redaktørers besøg fra at tælle?**
+Aktivér **Udelad indloggede brugere** i Indstillinger.
+
+**Virker opgradering fra 1.x?**
+Ja. Databaseskema opdateres automatisk. Al eksisterende data bevares.
+
+---
+
+*WP VisitChart v2.5.5 · Public Domain (Unlicense) · Lavet af Jens Hummelmose*
+*Kildekode: [github.com/hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)*
