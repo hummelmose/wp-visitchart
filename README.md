@@ -26,6 +26,9 @@ WP VisitChart is a self-hosted WordPress plugin for real-time traffic analytics.
 - PHP 7.4+
 - MySQL 5.7+ / MariaDB 10.3+
 
+<img width="1718" height="915" alt="image" src="https://github.com/user-attachments/assets/4051f143-c4c7-4c25-96b5-0c44f797a695" />
+
+
 ## Installation
 
 1. Download `wp-visitchart.zip` from [Releases](../../releases)
