@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.5.4
+ * Version: 2.5.5
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -2249,7 +2249,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.5.4';
+    $plugin_version = '2.5.5';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
@@ -2313,7 +2313,7 @@ function lstats_render_dashboard_widget() {
     $today       = date( 'Y-m-d', current_time( 'timestamp' ) );
 
     $rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT post_id, views_today, views_total
+        "SELECT post_id, views_today, views_total + views_today AS views_total
          FROM $views_table
          WHERE count_date = %s AND views_today > 0
          ORDER BY views_today DESC
