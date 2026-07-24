@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.5.3
+ * Version: 2.5.4
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -2249,7 +2249,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.5.3';
+    $plugin_version = '2.5.4';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
@@ -2291,3 +2291,66 @@ function lstats_enqueue_admin( $hook ) {
 }
 add_action( 'admin_enqueue_scripts', 'lstats_enqueue_admin', 100 );
 
+
+/**
+ * WordPress Dashboard Widget – Top 20 mest læste artikler i dag
+ */
+function lstats_register_dashboard_widget() {
+    if ( ! lstats_is_post_views_enabled() ) {
+        return;
+    }
+    wp_add_dashboard_widget(
+        'lstats_top20_widget',
+        __( 'WP VisitChart – Top 20 i dag', 'wp-visitchart' ),
+        'lstats_render_dashboard_widget'
+    );
+}
+add_action( 'wp_dashboard_setup', 'lstats_register_dashboard_widget' );
+
+function lstats_render_dashboard_widget() {
+    global $wpdb;
+    $views_table = $wpdb->prefix . LSTATS_VIEWS_TABLE;
+    $today       = date( 'Y-m-d', current_time( 'timestamp' ) );
+
+    $rows = $wpdb->get_results( $wpdb->prepare(
+        "SELECT post_id, views_today, views_total
+         FROM $views_table
+         WHERE count_date = %s AND views_today > 0
+         ORDER BY views_today DESC
+         LIMIT 20",
+        $today
+    ) );
+
+    if ( empty( $rows ) ) {
+        echo '<p style="color:#8c8f94;">' . esc_html__( 'Ingen sidevisninger registreret i dag endnu.', 'wp-visitchart' ) . '</p>';
+        return;
+    }
+
+    $post_ids = wp_list_pluck( $rows, 'post_id' );
+    _prime_post_caches( array_map( 'intval', $post_ids ), false, false );
+
+    echo '<table style="width:100%; border-collapse:collapse;">';
+    echo '<thead><tr>';
+    echo '<th style="text-align:left; padding:4px 8px 4px 0; border-bottom:1px solid #dcdcde; font-size:12px; color:#646970;">' . esc_html__( 'Artikel', 'wp-visitchart' ) . '</th>';
+    echo '<th style="text-align:right; padding:4px 0; border-bottom:1px solid #dcdcde; font-size:12px; color:#646970; white-space:nowrap;">' . esc_html__( 'I dag', 'wp-visitchart' ) . '</th>';
+    echo '<th style="text-align:right; padding:4px 0 4px 12px; border-bottom:1px solid #dcdcde; font-size:12px; color:#646970; white-space:nowrap;">' . esc_html__( 'Total', 'wp-visitchart' ) . '</th>';
+    echo '</tr></thead><tbody>';
+
+    foreach ( $rows as $i => $row ) {
+        $title = get_the_title( $row->post_id );
+        $url   = get_permalink( $row->post_id );
+        $bg    = $i % 2 === 0 ? '#f9f9f9' : '#ffffff';
+
+        echo '<tr style="background:' . $bg . ';">';
+        echo '<td style="padding:5px 8px 5px 0; font-size:13px; border-bottom:1px solid #f0f0f1; max-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">';
+        echo '<span style="color:#8c8f94; font-size:12px; margin-right:4px;">' . esc_html( sprintf( '%02d', $i + 1 ) ) . ':</span>';
+        echo '<a href="' . esc_url( $url ) . '" style="color:#2271b1; text-decoration:none;">' . esc_html( $title ) . '</a>';
+        echo '</td>';
+        echo '<td style="text-align:right; padding:5px 0; font-size:13px; font-weight:600; color:#2271b1; border-bottom:1px solid #f0f0f1; white-space:nowrap; width:48px;">' . esc_html( number_format_i18n( $row->views_today ) ) . '</td>';
+        echo '<td style="text-align:right; padding:5px 0 5px 12px; font-size:12px; color:#646970; border-bottom:1px solid #f0f0f1; white-space:nowrap; width:60px;">' . esc_html( number_format_i18n( $row->views_total ) ) . '</td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table>';
+    echo '<p style="text-align:right; margin:8px 0 0; font-size:12px;"><a href="' . esc_url( admin_url( 'admin.php?page=lstats-dashboard' ) ) . '">' . esc_html__( 'Gå til WP VisitChart →', 'wp-visitchart' ) . '</a></p>';
+}
