@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.5.8
+ * Version: 2.6.4
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -615,17 +615,25 @@ function lstats_render_mobile_page( $token ) {
 
         body {
             margin: 0;
-            padding: 16px;
-            padding-top: 90px;
+            padding: 0;
             background: var(--m-bg);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             color: var(--m-text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .scroll-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            padding-top: 16px;
         }
         .sticky-live-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
+            flex-shrink: 0;
+            position: relative;
             z-index: 100;
             background: var(--m-sticky);
             border-bottom: 1px solid var(--m-border);
@@ -806,7 +814,7 @@ function lstats_render_mobile_page( $token ) {
         <button class="m-theme-toggle" id="m-theme-toggle" title="Skift tema">🌙</button>
     </div>
 
-    <h1><?php esc_html_e( 'Live besøgende og dagens trafik', 'wp-visitchart' ); ?></h1>
+    <div class="scroll-content">
 
     <div class="card">
         <div class="label"><?php esc_html_e( 'Besøgende i dag (5-minutters intervaller)', 'wp-visitchart' ); ?></div>
@@ -850,6 +858,8 @@ function lstats_render_mobile_page( $token ) {
     <p style="text-align: center; color: #8c8f94; font-size: 11px; margin-top: 24px; padding-bottom: 16px;">
         WP VisitChart <?php echo esc_html( get_plugin_data( __FILE__ )['Version'] ); ?> &mdash; Created by Jens Hummelmose, 2026<?php $y = date('Y'); if ( $y > 2026 ) { echo '&ndash;' . esc_html( $y ); } ?>
     </p>
+
+    </div><!-- /.scroll-content -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <script>
@@ -1991,12 +2001,12 @@ add_action( 'admin_head', function() {
     $lstats_theme = get_user_meta( get_current_user_id(), 'lstats_theme', true ) ?: 'light';
     echo '<style>
         .toplevel_page_lstats-dashboard #wpcontent { padding-top: 0; }
-        .toplevel_page_lstats-dashboard .wrap { padding-top: 58px; padding-bottom: 0; }
+        .toplevel_page_lstats-dashboard .wrap { padding-top: 58px; padding-bottom: 0; padding-left: 20px; padding-right: 20px; }
         .toplevel_page_lstats-dashboard .wrap > h1 { margin-top: 6px !important; margin-bottom: 6px !important; padding: 0 !important; }
         .toplevel_page_lstats-dashboard .lstats-page-count { color: var(--ls-accent) !important; font-weight: 600 !important; width: 48px !important; text-align: right !important; flex-shrink: 0 !important; }
         .toplevel_page_lstats-dashboard .lstats-badge-slot { width: 22px !important; min-width: 22px !important; flex-shrink: 0 !important; text-align: center !important; }
         .toplevel_page_lstats-dashboard .lstats-right-col { display: flex !important; align-items: center !important; flex-shrink: 0 !important; }
-        html.lstats-dark .toplevel_page_lstats-dashboard #wpcontent,
+        .toplevel_page_lstats-dashboard #lstats-app { margin-top: 16px; }
         html.lstats-dark .toplevel_page_lstats-dashboard #wpbody-content,
         html.lstats-dark .toplevel_page_lstats-dashboard .wrap { background: var(--ls-bg) !important; }
     </style>';
@@ -2050,7 +2060,6 @@ function lstats_render_dashboard() {
     $year    = date( 'Y' );
     ?>
     <div class="wrap">
-        <h1 style="margin-top: 6px !important; margin-bottom: 6px !important; padding: 0;"><?php esc_html_e( 'Live besøgende og dagens trafik', 'wp-visitchart' ); ?></h1>
         <div id="lstats-sticky-bar">
             <div class="lstats-sticky-item">
                 <div class="lstats-sticky-label"><?php esc_html_e( 'Live besøgende', 'wp-visitchart' ); ?></div>
@@ -2325,7 +2334,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.5.8';
+    $plugin_version = '2.6.4';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
