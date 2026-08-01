@@ -1,6 +1,6 @@
 # WP VisitChart — Komplet Brugermanual
 
-> Version 2.5.5 · Lavet af Jens Hummelmose · Public Domain (Unlicense)
+> Version 2.5.8 · Lavet af Jens Hummelmose · Public Domain (Unlicense)
 > GitHub: [hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)
 
 ---
@@ -325,5 +325,35 @@ Ja. Databaseskema opdateres automatisk. Al eksisterende data bevares.
 
 ---
 
-*WP VisitChart v2.5.5 · Public Domain (Unlicense) · Lavet af Jens Hummelmose*
+
+---
+
+## 17. Lys / Mørk tilstand
+
+Både admin-dashboardet og mobilsiden understøtter lys og mørk tilstand.
+
+### Admin-dashboard
+
+En måne (🌙) / sol (☀️) toggle-knap sidder i højre side af den sticky live-bjælke øverst på dashboardet.
+
+**Gemning:** Den valgte tilstand gemmes per WordPress-bruger via `user_meta`. Hver redaktør eller forfatter på sitet har sin egen uafhængige præference der bevares på tværs af sessioner og enheder.
+
+**Flash-forebyggelse:** Den gemte tilstand sættes på `<html>`-elementet via et inline script i `admin_head` inden siden renderes — der er ingen hvid flash ved indlæsning af en mørk-tilstand-session.
+
+### Mobilsiden
+
+Samme måne/sol toggle-knap sidder i højre side af den sticky live-bjælke.
+
+**Gemning:** Gemmes i `localStorage` i browseren. Præferencen bevares på tværs af besøg på samme enhed og browser, uafhængigt af WordPress-login.
+
+### Hvad der ændres i mørk tilstand
+
+- Alle kortbaggrunde, kanter og tekstfarver skifter til en mørk palette
+- Trafikgrafens farver opdateres dynamisk så de forbliver læsbare på mørk baggrund
+- WordPress' admin `#wpcontent`-baggrund overskrives så der ikke er lyse gab mellem kortene
+- Den sticky live-bjælke og alle sektionsetiketter tilpasser sig den mørke palette
+
+---
+
+*WP VisitChart v2.5.8 · Public Domain (Unlicense) · Lavet af Jens Hummelmose*
 *Kildekode: [github.com/hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)*

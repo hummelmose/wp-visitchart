@@ -1,6 +1,6 @@
 # WP VisitChart — Complete User Manual
 
-> Version 2.5.5 · Created by Jens Hummelmose · Public Domain (Unlicense)
+> Version 2.5.8 · Created by Jens Hummelmose · Public Domain (Unlicense)
 > GitHub: [hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)
 
 ---
@@ -512,5 +512,35 @@ Yes. The database schema is updated automatically via `dbDelta()` on first load 
 
 ---
 
-*WP VisitChart v2.5.5 · Public Domain (Unlicense) · Created by Jens Hummelmose*
+
+---
+
+## 17. Light / Dark Mode
+
+Both the admin dashboard and the mobile page support light and dark mode.
+
+### Admin dashboard
+
+A moon (🌙) / sun (☀️) toggle button sits on the right side of the sticky live bar at the top of the dashboard.
+
+**Preference storage:** The selected theme is saved per WordPress user via `user_meta`. Each editor or author on the site has their own independent preference that persists across sessions and devices.
+
+**Flash prevention:** The saved theme is applied to the `<html>` element via an inline script in `admin_head`, before the page renders — there is no flash of light mode when loading a dark mode session.
+
+### Mobile page
+
+The same moon/sun toggle button sits on the right side of the sticky live bar.
+
+**Preference storage:** Saved in `localStorage` in the browser. The preference persists across visits on the same device and browser, independent of any WordPress login.
+
+### What changes in dark mode
+
+- All card backgrounds, borders, and text colours switch to a dark palette
+- The traffic graph colours update dynamically to remain readable on a dark background
+- The WordPress admin `#wpcontent` background is overridden so there are no light gaps between cards
+- The sticky live bar and all section labels adapt to the dark palette
+
+---
+
+*WP VisitChart v2.5.8 · Public Domain (Unlicense) · Created by Jens Hummelmose*
 *Source: [github.com/hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)*
