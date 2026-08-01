@@ -1,5 +1,4 @@
 ![WP VisitChart](wp-visitchart-github-banner.png)
-![WP VisitChart](wp-visitchart-github-banner.png)
 
 # WP VisitChart
 
