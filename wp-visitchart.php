@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.5.5
+ * Version: 2.5.8
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -584,13 +584,42 @@ function lstats_render_mobile_page( $token ) {
     ) ) ); ?>">
     <style>
         * { box-sizing: border-box; }
+
+        :root {
+            --m-bg:        #f0f0f1;
+            --m-card:      #ffffff;
+            --m-border:    #dcdcde;
+            --m-soft:      #f0f0f1;
+            --m-text:      #1d2327;
+            --m-muted:     #646970;
+            --m-faint:     #8c8f94;
+            --m-accent:    #2271b1;
+            --m-accent-s:  #72aee6;
+            --m-sticky:    #ffffff;
+            --m-shadow:    rgba(0,0,0,0.08);
+        }
+
+        body.m-dark {
+            --m-bg:        #1a1d21;
+            --m-card:      #2c3338;
+            --m-border:    #3c4348;
+            --m-soft:      #333a3f;
+            --m-text:      #e2e4e7;
+            --m-muted:     #a7aaad;
+            --m-faint:     #787c82;
+            --m-accent:    #72aee6;
+            --m-accent-s:  #93c5fd;
+            --m-sticky:    #1e2327;
+            --m-shadow:    rgba(0,0,0,0.3);
+        }
+
         body {
             margin: 0;
             padding: 16px;
             padding-top: 90px;
-            background: #f0f0f1;
+            background: var(--m-bg);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: #1d2327;
+            color: var(--m-text);
         }
         .sticky-live-bar {
             position: fixed;
@@ -598,9 +627,9 @@ function lstats_render_mobile_page( $token ) {
             left: 0;
             right: 0;
             z-index: 100;
-            background: #fff;
-            border-bottom: 1px solid #dcdcde;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            background: var(--m-sticky);
+            border-bottom: 1px solid var(--m-border);
+            box-shadow: 0 2px 6px var(--m-shadow);
             padding: 10px 16px;
             text-align: center;
         }
@@ -608,42 +637,56 @@ function lstats_render_mobile_page( $token ) {
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: #646970;
+            color: var(--m-muted);
             margin-bottom: 2px;
         }
         .sticky-number {
             font-size: 30px;
             font-weight: 700;
-            color: #2271b1;
+            color: var(--m-accent);
             line-height: 1.1;
             transition: color 0.2s ease;
         }
         .sticky-number.flash {
-            color: #72aee6;
+            color: var(--m-accent-s);
+        }
+        .m-theme-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: 1px solid var(--m-border);
+            border-radius: 16px;
+            padding: 3px 9px;
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--m-muted);
         }
         h1 {
             font-size: 20px;
             margin: 0 0 16px;
+            color: var(--m-text);
         }
         .card {
-            background: #fff;
-            border: 1px solid #dcdcde;
+            background: var(--m-card);
+            border: 1px solid var(--m-border);
             border-radius: 8px;
             padding: 18px;
             margin-bottom: 16px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 2px var(--m-shadow);
         }
         .label {
             font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: #646970;
+            color: var(--m-muted);
             margin-bottom: 12px;
         }
         .number {
             font-size: 56px;
             font-weight: 700;
-            color: #2271b1;
+            color: var(--m-accent);
             text-align: center;
             line-height: 1.3;
             margin-top: 8px;
@@ -651,11 +694,11 @@ function lstats_render_mobile_page( $token ) {
             transition: color 0.2s ease;
         }
         .number.flash {
-            color: #72aee6;
+            color: var(--m-accent-s);
         }
         .bot-count {
             font-size: 12px;
-            color: #8c8f94;
+            color: var(--m-faint);
             text-align: center;
             margin-bottom: 10px;
         }
@@ -663,10 +706,10 @@ function lstats_render_mobile_page( $token ) {
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: #8c8f94;
+            color: var(--m-faint);
             margin-top: 12px;
             padding-top: 12px;
-            border-top: 1px solid #f0f0f1;
+            border-top: 1px solid var(--m-soft);
         }
         .bot-list, .page-list {
             list-style: none;
@@ -678,7 +721,7 @@ function lstats_render_mobile_page( $token ) {
             justify-content: space-between;
             gap: 8px;
             padding: 7px 0;
-            border-bottom: 1px solid #f0f0f1;
+            border-bottom: 1px solid var(--m-soft);
             font-size: 14px;
         }
         .bot-list li:last-child, .page-list li:last-child {
@@ -691,12 +734,12 @@ function lstats_render_mobile_page( $token ) {
             flex: 1;
         }
         .page-title a {
-            color: #1d2327;
+            color: var(--m-text);
             text-decoration: none;
         }
         .count-num {
             font-weight: 600;
-            color: #2271b1;
+            color: var(--m-accent);
             flex-shrink: 0;
         }
         .value-wrap {
@@ -711,7 +754,7 @@ function lstats_render_mobile_page( $token ) {
         .count-pct {
             min-width: 54px;
             text-align: right;
-            color: #8c8f94;
+            color: var(--m-faint);
             font-weight: 400;
             font-size: 12px;
         }
@@ -721,7 +764,7 @@ function lstats_render_mobile_page( $token ) {
             position: relative;
         }
         .empty {
-            color: #8c8f94;
+            color: var(--m-faint);
             font-style: italic;
             font-size: 14px;
         }
@@ -751,15 +794,16 @@ function lstats_render_mobile_page( $token ) {
         .refresh-note {
             text-align: center;
             font-size: 11px;
-            color: #8c8f94;
+            color: var(--m-faint);
             margin-top: 8px;
         }
     </style>
 </head>
 <body>
-    <div class="sticky-live-bar">
+    <div class="sticky-live-bar" style="position:relative;">
         <div class="label"><?php esc_html_e( 'Live besøgende lige nu', 'wp-visitchart' ); ?></div>
         <div class="sticky-number" id="m-total">0</div>
+        <button class="m-theme-toggle" id="m-theme-toggle" title="Skift tema">🌙</button>
     </div>
 
     <h1><?php esc_html_e( 'Live besøgende og dagens trafik', 'wp-visitchart' ); ?></h1>
@@ -1131,6 +1175,22 @@ function lstats_render_mobile_page( $token ) {
         setInterval(updateTopPages, 60000);
         setInterval(updateReferrers, 60000);
         setInterval(updateInsights, 60000);
+
+        // Dark mode – gemmes i localStorage så valget huskes på tværs af besøg
+        var mToggle = document.getElementById('m-theme-toggle');
+        var mDark = localStorage.getItem('lstats_m_theme') === 'dark';
+        if (mDark) {
+            document.body.classList.add('m-dark');
+            mToggle.textContent = '☀️';
+        }
+        if (mToggle) {
+            mToggle.addEventListener('click', function() {
+                mDark = !mDark;
+                document.body.classList.toggle('m-dark', mDark);
+                mToggle.textContent = mDark ? '☀️' : '🌙';
+                localStorage.setItem('lstats_m_theme', mDark ? 'dark' : 'light');
+            });
+        }
     })();
     </script>
 </body>
@@ -1911,6 +1971,14 @@ function lstats_admin_favicon() {
     $icon_url = plugins_url( 'icons/icon-32.png', __FILE__ );
     echo '<link rel="icon" type="image/png" href="' . esc_url( $icon_url ) . '">';
 }
+// Gemmer brugerens tema-præference (light/dark) i user meta
+add_action( 'wp_ajax_lstats_save_theme', function() {
+    check_ajax_referer( 'lstats_theme_nonce', 'nonce' );
+    $theme = in_array( $_POST['theme'] ?? '', array( 'light', 'dark' ) ) ? $_POST['theme'] : 'light';
+    update_user_meta( get_current_user_id(), 'lstats_theme', $theme );
+    wp_send_json_success();
+} );
+
 add_action( 'admin_head', 'lstats_admin_favicon' );
 
 // Giver .wrap ekstra padding-top på dashboard-siden så indholdet
@@ -1920,14 +1988,21 @@ add_action( 'admin_head', function() {
     if ( ! $screen || 'toplevel_page_lstats-dashboard' !== $screen->id ) {
         return;
     }
+    $lstats_theme = get_user_meta( get_current_user_id(), 'lstats_theme', true ) ?: 'light';
     echo '<style>
         .toplevel_page_lstats-dashboard #wpcontent { padding-top: 0; }
         .toplevel_page_lstats-dashboard .wrap { padding-top: 58px; padding-bottom: 0; }
         .toplevel_page_lstats-dashboard .wrap > h1 { margin-top: 6px !important; margin-bottom: 6px !important; padding: 0 !important; }
-        .toplevel_page_lstats-dashboard .lstats-page-count { color: #2271b1 !important; font-weight: 600 !important; width: 48px !important; text-align: right !important; flex-shrink: 0 !important; }
+        .toplevel_page_lstats-dashboard .lstats-page-count { color: var(--ls-accent) !important; font-weight: 600 !important; width: 48px !important; text-align: right !important; flex-shrink: 0 !important; }
         .toplevel_page_lstats-dashboard .lstats-badge-slot { width: 22px !important; min-width: 22px !important; flex-shrink: 0 !important; text-align: center !important; }
         .toplevel_page_lstats-dashboard .lstats-right-col { display: flex !important; align-items: center !important; flex-shrink: 0 !important; }
+        html.lstats-dark .toplevel_page_lstats-dashboard #wpcontent,
+        html.lstats-dark .toplevel_page_lstats-dashboard #wpbody-content,
+        html.lstats-dark .toplevel_page_lstats-dashboard .wrap { background: var(--ls-bg) !important; }
     </style>';
+    if ( 'dark' === $lstats_theme ) {
+        echo '<script>document.documentElement.classList.add("lstats-dark");</script>';
+    }
 } );
 add_action( 'admin_menu', 'lstats_admin_menu' );
 
@@ -1981,6 +2056,7 @@ function lstats_render_dashboard() {
                 <div class="lstats-sticky-label"><?php esc_html_e( 'Live besøgende', 'wp-visitchart' ); ?></div>
                 <div class="lstats-sticky-number" id="lstats-sticky-total">0</div>
             </div>
+            <button id="lstats-theme-toggle" title="<?php esc_attr_e( 'Skift tema', 'wp-visitchart' ); ?>">🌙</button>
         </div>
         <script>
         (function() {
@@ -2249,7 +2325,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.5.5';
+    $plugin_version = '2.5.8';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
@@ -2258,9 +2334,11 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_localize_script( 'lstats-admin', 'lstatsAdmin', array(
-        'restUrl' => esc_url_raw( rest_url( 'lstats/v1/' ) ),
-        'nonce'   => wp_create_nonce( 'wp_rest' ),
-        'locale'  => str_replace( '_', '-', get_locale() ),
+        'restUrl'    => esc_url_raw( rest_url( 'lstats/v1/' ) ),
+        'nonce'      => wp_create_nonce( 'wp_rest' ),
+        'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
+        'themeNonce' => wp_create_nonce( 'lstats_theme_nonce' ),
+        'locale'     => str_replace( '_', '-', get_locale() ),
         'i18n'    => array(
             'liveVisitorsNow'    => __( 'Live besøgende lige nu', 'wp-visitchart' ),
             'botsRegistered'     => __( 'bots registreret', 'wp-visitchart' ),

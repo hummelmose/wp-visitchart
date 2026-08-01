@@ -164,6 +164,7 @@
                 return;
             }
 
+            var c = getChartColors();
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 plugins: [verticalLinePlugin],
@@ -173,8 +174,8 @@
                         {
                             label: lstatsAdmin.i18n.uniqueVisitors,
                             data: counts,
-                            borderColor: '#2271b1',
-                            backgroundColor: 'rgba(34, 113, 177, 0.1)',
+                            borderColor: c.blue,
+                            backgroundColor: c.blueFill,
                             fill: true,
                             tension: 0.3,
                             pointRadius: 0,
@@ -184,7 +185,7 @@
                         {
                             label: lstatsAdmin.i18n.pageviews,
                             data: pageviews,
-                            borderColor: '#d63638',
+                            borderColor: c.red,
                             backgroundColor: 'rgba(214, 54, 56, 0.05)',
                             fill: false,
                             tension: 0.3,
@@ -196,8 +197,8 @@
                         {
                             label: lstatsAdmin.i18n.uniqueVisitors + ' (' + lstatsAdmin.i18n.yesterday + ')',
                             data: prevCounts,
-                            borderColor: 'rgba(150, 150, 150, 0.5)',
-                            backgroundColor: 'rgba(150, 150, 150, 0.08)',
+                            borderColor: c.grey,
+                            backgroundColor: c.greyFill,
                             fill: true,
                             tension: 0.3,
                             pointRadius: 0,
@@ -207,7 +208,7 @@
                         {
                             label: lstatsAdmin.i18n.pageviews + ' (' + lstatsAdmin.i18n.yesterday + ')',
                             data: prevPageviews,
-                            borderColor: 'rgba(150, 150, 150, 0.35)',
+                            borderColor: c.greyLight,
                             backgroundColor: 'rgba(0, 0, 0, 0)',
                             fill: false,
                             tension: 0.3,
@@ -349,7 +350,50 @@
         updateInsights();
     }
 
+    function getChartColors() {
+        var style = getComputedStyle(document.body);
+        return {
+            blue:      style.getPropertyValue('--ls-chart-blue').trim()      || '#2271b1',
+            blueFill:  style.getPropertyValue('--ls-chart-blue-fill').trim() || 'rgba(34,113,177,0.10)',
+            red:       style.getPropertyValue('--ls-chart-red').trim()       || '#d63638',
+            grey:      style.getPropertyValue('--ls-chart-grey').trim()      || 'rgba(150,150,150,0.5)',
+            greyFill:  style.getPropertyValue('--ls-chart-grey-fill').trim() || 'rgba(150,150,150,0.08)',
+            greyLight: style.getPropertyValue('--ls-chart-grey').trim()      || 'rgba(150,150,150,0.35)',
+        };
+    }
+
+    function applyChartColors() {
+        if (!chartInstance) return;
+        var c = getChartColors();
+        chartInstance.data.datasets[0].borderColor     = c.blue;
+        chartInstance.data.datasets[0].backgroundColor = c.blueFill;
+        chartInstance.data.datasets[1].borderColor     = c.red;
+        chartInstance.data.datasets[2].borderColor     = c.grey;
+        chartInstance.data.datasets[2].backgroundColor = c.greyFill;
+        chartInstance.data.datasets[3].borderColor     = c.greyLight;
+        chartInstance.update('none');
+    }
+
     buildLayout();
+
+    // Theme toggle
+    var themeToggle = document.getElementById('lstats-theme-toggle');
+    if (themeToggle) {
+        var isDark = document.documentElement.classList.contains('lstats-dark');
+        themeToggle.textContent = isDark ? '☀️' : '🌙';
+        themeToggle.addEventListener('click', function() {
+            isDark = !isDark;
+            document.documentElement.classList.toggle('lstats-dark', isDark);
+            themeToggle.textContent = isDark ? '☀️' : '🌙';
+            setTimeout(applyChartColors, 50);
+            var fd = new FormData();
+            fd.append('action', 'lstats_save_theme');
+            fd.append('nonce', lstatsAdmin.themeNonce);
+            fd.append('theme', isDark ? 'dark' : 'light');
+            fetch(lstatsAdmin.ajaxUrl, { method: 'POST', body: fd });
+        });
+    }
+
     refreshAll();
 
     setInterval(updateLiveCount, 10000);
@@ -396,3 +440,4 @@
 // 2.5.1
 
 /* v2.5.2 */
+// 2.5.7

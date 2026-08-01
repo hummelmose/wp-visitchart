@@ -1,3 +1,48 @@
+/* ── CSS Custom Properties – Light mode (default) ────────────────────────── */
+:root {
+    --ls-bg:          #f0f0f1;
+    --ls-card:        #ffffff;
+    --ls-border:      #dcdcde;
+    --ls-border-soft: #f0f0f1;
+    --ls-text:        #1d2327;
+    --ls-muted:       #646970;
+    --ls-faint:       #8c8f94;
+    --ls-accent:      #2271b1;
+    --ls-accent-soft: #72aee6;
+    --ls-row-alt:     #f9f9f9;
+    --ls-sticky-bg:   #ffffff;
+    --ls-shadow:      rgba(0,0,0,0.08);
+    --ls-chart-blue:  rgba(34,113,177,1);
+    --ls-chart-blue-fill: rgba(34,113,177,0.12);
+    --ls-chart-red:   rgba(214,54,56,1);
+    --ls-chart-grey:  rgba(180,180,180,1);
+    --ls-chart-grey-fill: rgba(180,180,180,0.07);
+    --ls-chart-grid:  rgba(0,0,0,0.06);
+}
+
+/* ── Dark mode overrides ──────────────────────────────────────────────────── */
+html.lstats-dark {
+    --ls-bg:          #1a1d21;
+    --ls-card:        #2c3338;
+    --ls-border:      #3c4348;
+    --ls-border-soft: #333a3f;
+    --ls-text:        #e2e4e7;
+    --ls-muted:       #a7aaad;
+    --ls-faint:       #787c82;
+    --ls-accent:      #72aee6;
+    --ls-accent-soft: #93c5fd;
+    --ls-row-alt:     #252b30;
+    --ls-sticky-bg:   #1e2327;
+    --ls-shadow:      rgba(0,0,0,0.3);
+    --ls-chart-blue:  rgba(114,174,230,1);
+    --ls-chart-blue-fill: rgba(114,174,230,0.15);
+    --ls-chart-red:   rgba(240,100,102,1);
+    --ls-chart-grey:  rgba(120,124,130,1);
+    --ls-chart-grey-fill: rgba(120,124,130,0.08);
+    --ls-chart-grid:  rgba(255,255,255,0.06);
+}
+
+/* ── Layout ───────────────────────────────────────────────────────────────── */
 .lstats-row {
     display: flex;
     gap: 20px;
@@ -5,11 +50,11 @@
 }
 
 .lstats-card {
-    background: #fff;
-    border: 1px solid #dcdcde;
+    background: var(--ls-card);
+    border: 1px solid var(--ls-border);
     border-radius: 4px;
     padding: 20px;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+    box-shadow: 0 1px 1px var(--ls-shadow);
 }
 
 .lstats-live-count {
@@ -23,10 +68,10 @@
     list-style: none;
     margin: 10px 0 0;
     padding: 10px 0 0;
-    border-top: 1px solid #f0f0f1;
+    border-top: 1px solid var(--ls-border-soft);
     text-align: left;
     font-size: 12px;
-    color: #50575e;
+    color: var(--ls-muted);
 }
 
 .lstats-bot-list li {
@@ -45,7 +90,7 @@
 
 .lstats-bot-count-num {
     font-weight: 600;
-    color: #2271b1;
+    color: var(--ls-accent);
     flex-shrink: 0;
 }
 
@@ -79,9 +124,11 @@
     flex-direction: column;
     gap: 12px;
 }
+
+.lstats-sublabel-gap {
     margin-top: 16px;
     padding-top: 16px;
-    border-top: 1px solid #f0f0f1;
+    border-top: 1px solid var(--ls-border-soft);
 }
 
 .lstats-trending-badge {
@@ -121,7 +168,7 @@
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #646970;
+    color: var(--ls-muted);
     margin-bottom: 18px;
 }
 
@@ -132,7 +179,7 @@
 .lstats-number {
     font-size: 64px;
     font-weight: 600;
-    color: #2271b1;
+    color: var(--ls-accent);
     line-height: 1;
     margin-top: 4px;
     margin-bottom: 6px;
@@ -141,29 +188,30 @@
 
 .lstats-number.lstats-flash,
 .lstats-sticky-number.lstats-flash {
-    color: #72aee6;
+    color: var(--ls-accent-soft);
 }
 
 .lstats-bot-count {
     font-size: 12px;
-    color: #8c8f94;
+    color: var(--ls-faint);
     margin-top: 6px;
 }
 
+/* ── Sticky bar ───────────────────────────────────────────────────────────── */
 #lstats-sticky-bar {
     position: fixed;
     top: 32px;
     left: 160px;
     right: 0;
     z-index: 9999;
-    background: #fff;
-    border-bottom: 1px solid #dcdcde;
+    background: var(--ls-sticky-bg);
+    border-bottom: 1px solid var(--ls-border);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 40px;
     padding: 8px 20px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px var(--ls-shadow);
 }
 
 .folded #lstats-sticky-bar {
@@ -185,17 +233,38 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #646970;
+    color: var(--ls-muted);
     margin-bottom: 2px;
 }
 
 .lstats-sticky-number {
     font-size: 32px;
     font-weight: 500;
-    color: #2271b1;
+    color: var(--ls-accent);
     line-height: 1;
 }
 
+/* ── Theme toggle button ──────────────────────────────────────────────────── */
+#lstats-theme-toggle {
+    position: absolute;
+    right: 20px;
+    background: none;
+    border: 1px solid var(--ls-border);
+    border-radius: 20px;
+    cursor: pointer;
+    padding: 4px 10px;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--ls-muted);
+    transition: border-color 0.15s, color 0.15s;
+}
+
+#lstats-theme-toggle:hover {
+    border-color: var(--ls-accent);
+    color: var(--ls-accent);
+}
+
+/* ── Misc layout ──────────────────────────────────────────────────────────── */
 .lstats-chart-full {
     flex: 1;
     width: 100%;
@@ -205,10 +274,10 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #8c8f94;
+    color: var(--ls-faint);
     margin-top: 4px;
     padding-top: 10px;
-    border-top: 1px solid #f0f0f1;
+    border-top: 1px solid var(--ls-border-soft);
     text-align: left;
 }
 
@@ -227,7 +296,7 @@
     align-items: baseline;
     gap: 8px;
     padding: 8px 0;
-    border-bottom: 1px solid #f0f0f1;
+    border-bottom: 1px solid var(--ls-border-soft);
 }
 
 #lstats-pages-list li:last-child,
@@ -237,7 +306,7 @@
 }
 
 .lstats-page-title {
-    color: #1d2327;
+    color: var(--ls-text);
     min-width: 0;
     flex: 1;
     display: flex;
@@ -247,7 +316,7 @@
 }
 
 .lstats-page-title a {
-    color: #1d2327;
+    color: var(--ls-accent);
     text-decoration: none;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -257,7 +326,6 @@
 }
 
 .lstats-page-title a:hover {
-    color: #2271b1;
     text-decoration: underline;
 }
 
@@ -267,13 +335,12 @@
     white-space: nowrap;
     min-width: 0;
     flex: 1;
-}
-    font-weight: 700;
+    color: var(--ls-accent);
 }
 
 .lstats-page-count {
     font-weight: 600;
-    color: #2271b1 !important;
+    color: var(--ls-accent) !important;
     flex-shrink: 0;
     width: 64px;
     text-align: right;
@@ -293,50 +360,20 @@
 .lstats-page-pct {
     min-width: 58px;
     text-align: right;
-    color: #8c8f94;
+    color: var(--ls-faint);
     font-weight: 400;
     font-size: 12px;
 }
 
 .lstats-empty {
-    color: #8c8f94;
+    color: var(--ls-faint);
     font-style: italic;
 }
 
-/* 2.0.6 */
-/* 2.1.0 */
-/* 2.1.1 */
-/* 2.1.2 */
-/* 2.1.3 */
-/* 2.1.4 */
-/* 2.1.5 */
-/* 2.1.6 */
-/* 2.1.7 */
-/* 2.1.8 */
-/* 2.1.9 */
-/* 2.2.0 */
-/* 2.2.1 */
-/* 2.2.2 */
-/* 2.3.0 */
-/* 2.3.1 */
-/* 2.3.2 */
-/* 2.3.3 */
-/* 2.3.4 */
-/* 2.3.5 */
-/* 2.3.6 */
-/* 2.3.7 */
-/* 2.3.8 */
-/* 2.3.9 */
-/* 2.4.0 */
-/* 2.4.1 */
-/* 2.4.2 */
-/* 2.4.3 */
-/* 2.4.5 */
-/* 2.4.6 */
-/* 2.4.7 */
-/* 2.4.8 */
-/* 2.4.9 */
-/* 2.5.0 */
-/* 2.5.1 */
+.lstats-num {
+    color: var(--ls-muted);
+    flex-shrink: 0;
+}
 
-/* v2.5.2 badge alignment fix */
+/* v2.5.6 dark mode */
+/* 2.5.7 */
