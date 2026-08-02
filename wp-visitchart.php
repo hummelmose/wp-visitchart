@@ -2,7 +2,9 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.6.4
+ * Version: 2.6.5
+ * License: GPL-2.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -23,10 +25,6 @@ define( 'LSTATS_DB_VERSION', '1.9' );
 /**
  * Indlæs oversættelser fra /languages-mappen
  */
-function lstats_load_textdomain() {
-    load_plugin_textdomain( 'wp-visitchart', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
-}
-add_action( 'plugins_loaded', 'lstats_load_textdomain' );
 
 /**
  * Tjekker om Font Awesome allerede er indlæst et andet sted på sitet (af temaet
@@ -492,7 +490,7 @@ function lstats_log_pageload() {
 
     $ip       = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
     $post_id  = get_queried_object_id();
-    $url      = sanitize_text_field( $_SERVER['REQUEST_URI'] ?? '' );
+    $url      = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
     $referrer = isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : '';
 
     $session_id = 'srv_' . substr( md5( $ip . $user_agent ), 0, 20 );
@@ -856,7 +854,7 @@ function lstats_render_mobile_page( $token ) {
     <div class="refresh-note"><?php esc_html_e( 'Opdateres automatisk', 'wp-visitchart' ); ?></div>
 
     <p style="text-align: center; color: #8c8f94; font-size: 11px; margin-top: 24px; padding-bottom: 16px;">
-        WP VisitChart <?php echo esc_html( get_plugin_data( __FILE__ )['Version'] ); ?> &mdash; Created by Jens Hummelmose, 2026<?php $y = date('Y'); if ( $y > 2026 ) { echo '&ndash;' . esc_html( $y ); } ?>
+        WP VisitChart <?php echo esc_html( get_plugin_data( __FILE__ )['Version'] ); ?> &mdash; Created by Jens Hummelmose, 2026<?php $y = gmdate('Y'); if ( $y > 2026 ) { echo '&ndash;' . esc_html( $y ); } ?>
     </p>
 
     </div><!-- /.scroll-content -->
@@ -1491,7 +1489,7 @@ function lstats_handle_heartbeat( WP_REST_Request $request ) {
     $ref_info        = lstats_categorize_referrer( $referrer, $url );
     $sessions_table  = $wpdb->prefix . LSTATS_SESSIONS_TABLE;
     $wpdb->query( $wpdb->prepare(
-        "INSERT IGNORE INTO $sessions_table
+        "INSERT IGNORE INTO $sessions_table // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
             (session_id, referrer, url, device_type, is_bot, category, domain, count_date, first_seen)
          VALUES (%s, %s, %s, %s, %d, %s, %s, %s, %s)",
         $session_id,
@@ -1501,7 +1499,7 @@ function lstats_handle_heartbeat( WP_REST_Request $request ) {
         $is_bot,
         $ref_info['category'],
         isset( $ref_info['domain'] ) ? $ref_info['domain'] : '',
-        date( 'Y-m-d', current_time( 'timestamp' ) ),
+        gmdate( 'Y-m-d', current_time( 'timestamp' ) ),
         current_time( 'mysql' )
     ) );
 
@@ -1521,7 +1519,7 @@ function lstats_get_live_count( WP_REST_Request $request ) {
         return new WP_REST_Response( $cached, 200 );
     }
 
-    $threshold = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - 120 );
+    $threshold = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - 120 );
 
     $total = $wpdb->get_var( $wpdb->prepare(
         "SELECT COUNT(DISTINCT session_id) FROM $table WHERE created_at >= %s AND is_bot = 0 AND source = 'heartbeat'",
@@ -1543,7 +1541,7 @@ function lstats_get_live_count( WP_REST_Request $request ) {
         $threshold
     ) );
 
-    $previous_threshold = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - 240 );
+    $previous_threshold = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - 240 );
 
     $previous_per_page = $wpdb->get_results( $wpdb->prepare(
         "SELECT post_id, COUNT(DISTINCT session_id) as live
@@ -1644,13 +1642,13 @@ function lstats_get_today_history( WP_REST_Request $request ) {
         return new WP_REST_Response( $cached, 200 );
     }
 
-    $today_date     = date( 'Y-m-d', current_time( 'timestamp' ) );
-    $last_week_date = date( 'Y-m-d', current_time( 'timestamp' ) - ( 7 * 86400 ) );
+    $today_date     = gmdate( 'Y-m-d', current_time( 'timestamp' ) );
+    $last_week_date = gmdate( 'Y-m-d', current_time( 'timestamp' ) - ( 7 * 86400 ) );
 
     $today_start     = $today_date . ' 00:00:00';
-    $today_end       = date( 'Y-m-d', current_time( 'timestamp' ) + 86400 ) . ' 00:00:00';
+    $today_end       = gmdate( 'Y-m-d', current_time( 'timestamp' ) + 86400 ) . ' 00:00:00';
     $last_week_start = $last_week_date . ' 00:00:00';
-    $last_week_end   = date( 'Y-m-d', current_time( 'timestamp' ) - ( 6 * 86400 ) ) . ' 00:00:00';
+    $last_week_end   = gmdate( 'Y-m-d', current_time( 'timestamp' ) - ( 6 * 86400 ) ) . ' 00:00:00';
 
     // To separate queries – én per dag – så MySQL kan lave en ren range-scan
     // på idx_graph_covering (is_bot, source, created_at, session_id, post_id)
@@ -1735,7 +1733,7 @@ function lstats_get_top_pages( WP_REST_Request $request ) {
     global $wpdb;
     $views_table = $wpdb->prefix . LSTATS_VIEWS_TABLE;
 
-    $today = date( 'Y-m-d', current_time( 'timestamp' ) );
+    $today = gmdate( 'Y-m-d', current_time( 'timestamp' ) );
 
     $rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT post_id, views_today AS visitors
@@ -1786,7 +1784,7 @@ function lstats_get_referrers( WP_REST_Request $request ) {
         return new WP_REST_Response( $cached, 200 );
     }
 
-    $today = date( 'Y-m-d', current_time( 'timestamp' ) );
+    $today = gmdate( 'Y-m-d', current_time( 'timestamp' ) );
 
     $category_rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT category, COUNT(*) AS cnt
@@ -1843,7 +1841,7 @@ function lstats_get_insights( WP_REST_Request $request ) {
         return new WP_REST_Response( $cached, 200 );
     }
 
-    $start_of_day = date( 'Y-m-d 00:00:00', current_time( 'timestamp' ) );
+    $start_of_day = gmdate( 'Y-m-d 00:00:00', current_time( 'timestamp' ) );
 
     // Enhedsfordeling: én GROUP BY-forespørgsel i SQL – ingen PHP-løkke nødvendig.
     // COUNT(DISTINCT session_id) sikrer at en session med mange heartbeats kun tælles én gang.
@@ -1903,11 +1901,11 @@ function lstats_record_pageview( WP_REST_Request $request ) {
 
     global $wpdb;
     $table = $wpdb->prefix . LSTATS_VIEWS_TABLE;
-    $today = date( 'Y-m-d', current_time( 'timestamp' ) );
+    $today = gmdate( 'Y-m-d', current_time( 'timestamp' ) );
     $now   = current_time( 'mysql' );
 
     $wpdb->query( $wpdb->prepare(
-        "INSERT INTO $table (post_id, views_today, views_total, count_date, updated_at)
+        "INSERT INTO $table (post_id, views_today, views_total, count_date, updated_at) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
          VALUES (%d, 1, 0, %s, %s)
          ON DUPLICATE KEY UPDATE
              views_total = views_total + IF(count_date < %s, views_today, 0),
@@ -1930,11 +1928,11 @@ function lstats_cleanup_old_data() {
     global $wpdb;
     $table          = $wpdb->prefix . LSTATS_TABLE;
     $sessions_table = $wpdb->prefix . LSTATS_SESSIONS_TABLE;
-    $threshold      = date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 8 * 24 * 3600 ) );
-    $date_threshold = date( 'Y-m-d', current_time( 'timestamp' ) - ( 8 * 24 * 3600 ) );
+    $threshold      = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( 8 * 24 * 3600 ) );
+    $date_threshold = gmdate( 'Y-m-d', current_time( 'timestamp' ) - ( 8 * 24 * 3600 ) );
 
-    $wpdb->query( $wpdb->prepare( "DELETE FROM $table WHERE created_at < %s", $threshold ) );
-    $wpdb->query( $wpdb->prepare( "DELETE FROM $sessions_table WHERE count_date < %s", $date_threshold ) );
+    $wpdb->query( $wpdb->prepare( "DELETE FROM $table WHERE created_at < %s", $threshold ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+    $wpdb->query( $wpdb->prepare( "DELETE FROM $sessions_table WHERE count_date < %s", $date_threshold ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 }
 
 function lstats_schedule_cleanup() {
@@ -1984,7 +1982,7 @@ function lstats_admin_favicon() {
 // Gemmer brugerens tema-præference (light/dark) i user meta
 add_action( 'wp_ajax_lstats_save_theme', function() {
     check_ajax_referer( 'lstats_theme_nonce', 'nonce' );
-    $theme = in_array( $_POST['theme'] ?? '', array( 'light', 'dark' ) ) ? $_POST['theme'] : 'light';
+    $theme = in_array( sanitize_text_field( wp_unslash( $_POST['theme'] ?? '' ) ), array( 'light', 'dark' ) ) ? sanitize_text_field( wp_unslash( $_POST['theme'] ) ) : 'light';
     update_user_meta( get_current_user_id(), 'lstats_theme', $theme );
     wp_send_json_success();
 } );
@@ -2057,7 +2055,7 @@ add_action( 'admin_post_lstats_save_settings', 'lstats_handle_save_settings' );
 
 function lstats_render_dashboard() {
     $version = '2.3.5';
-    $year    = date( 'Y' );
+    $year    = gmdate( 'Y' );
     ?>
     <div class="wrap">
         <div id="lstats-sticky-bar">
@@ -2173,7 +2171,7 @@ function lstats_render_settings_page() {
                             foreach ( $categories as $cat ) {
                                 printf(
                                     '<option value="%d"%s>%s</option>',
-                                    $cat->term_id,
+                                    absint( $cat->term_id ),
                                     selected( $featured_category_id, $cat->term_id, false ),
                                     esc_html( $cat->name )
                                 );
@@ -2254,7 +2252,7 @@ function lstats_render_views_column( $column, $post_id ) {
     }
     global $wpdb;
     $views_table = $wpdb->prefix . LSTATS_VIEWS_TABLE;
-    $today = date( 'Y-m-d', current_time( 'timestamp' ) );
+    $today = gmdate( 'Y-m-d', current_time( 'timestamp' ) );
     $row = $wpdb->get_row( $wpdb->prepare(
         "SELECT views_today, views_total, count_date FROM $views_table WHERE post_id = %d",
         (int) $post_id
@@ -2397,7 +2395,7 @@ add_action( 'wp_dashboard_setup', 'lstats_register_dashboard_widget' );
 function lstats_render_dashboard_widget() {
     global $wpdb;
     $views_table = $wpdb->prefix . LSTATS_VIEWS_TABLE;
-    $today       = date( 'Y-m-d', current_time( 'timestamp' ) );
+    $today       = gmdate( 'Y-m-d', current_time( 'timestamp' ) );
 
     $rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT post_id, views_today, views_total + views_today AS views_total
@@ -2428,7 +2426,7 @@ function lstats_render_dashboard_widget() {
         $url   = get_permalink( $row->post_id );
         $bg    = $i % 2 === 0 ? '#f9f9f9' : '#ffffff';
 
-        echo '<tr style="background:' . $bg . ';">';
+        echo '<tr style="background:' . esc_attr( $bg ) . ';">';
         echo '<td style="padding:5px 8px 5px 0; font-size:13px; border-bottom:1px solid #f0f0f1; max-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">';
         echo '<span style="color:#8c8f94; font-size:12px; margin-right:4px;">' . esc_html( sprintf( '%02d', $i + 1 ) ) . ':</span>';
         echo '<a href="' . esc_url( $url ) . '" style="color:#2271b1; text-decoration:none;">' . esc_html( $title ) . '</a>';
