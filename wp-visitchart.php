@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.6.5
+ * Version: 2.6.8
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -1143,7 +1143,7 @@ function lstats_render_mobile_page( $token ) {
                 data.domains.forEach(function (ref, index) {
                     var li = document.createElement('li');
                     var num = String(index + 1).padStart(2, '0');
-                    li.innerHTML = '<span class="page-title"><b>' + num + ':</b> ' + escapeHtml(ref.domain) + ':</span>' +
+                    li.innerHTML = '<span class="page-title"><b>' + num + ':</b> ' + escapeHtml(ref.domain) + '</span>' +
                                     '<span class="count-num"> ' + formatNumber(ref.count) + '</span>';
                     domainList.appendChild(li);
                 });
@@ -1777,6 +1777,34 @@ function lstats_get_top_pages( WP_REST_Request $request ) {
  * forudberegnet ved write-tid, så dette er et simpelt index-scan på
  * ~25.000 rækker i stedet for en subquery + filesort på 1.400.000+ rækker.
  */
+/**
+ * Oversætter Android app-pakkenavne (der optræder som referrer-domæner når
+ * links åbnes fra en app i stedet for en browser) til læsbare navne.
+ */
+function lstats_prettify_domain( $domain ) {
+    $known_apps = array(
+        'com.google.android.googlequicksearchbox' => 'Google Search App',
+        'com.google.android.gm'                   => 'Gmail App',
+        'com.google.android.apps.magazines'        => 'Google News App',
+        'com.google.android.youtube'                => 'YouTube App',
+        'com.android.chrome'                        => 'Chrome App',
+        'com.facebook.katana'                       => 'Facebook App',
+        'com.facebook.orca'                          => 'Messenger App',
+        'com.instagram.android'                      => 'Instagram App',
+        'com.twitter.android'                         => 'Twitter/X App',
+        'com.linkedin.android'                        => 'LinkedIn App',
+        'com.reddit.frontpage'                        => 'Reddit App',
+        'com.zhiliaoapp.musically'                    => 'TikTok App',
+        'com.pinterest'                                => 'Pinterest App',
+        'com.slack'                                    => 'Slack App',
+        'com.microsoft.office.outlook'                 => 'Outlook App',
+        'com.apple.mobilenotes'                        => 'Apple Notes',
+        'com.apple.mobilesafari'                       => 'Safari App',
+    );
+
+    return isset( $known_apps[ $domain ] ) ? $known_apps[ $domain ] : $domain;
+}
+
 function lstats_get_referrers( WP_REST_Request $request ) {
     global $wpdb;
     $sessions_table = $wpdb->prefix . LSTATS_SESSIONS_TABLE;
@@ -1816,7 +1844,7 @@ function lstats_get_referrers( WP_REST_Request $request ) {
     $domains = array();
     foreach ( $domain_rows as $row ) {
         $domains[] = array(
-            'domain' => $row->domain,
+            'domain' => lstats_prettify_domain( $row->domain ),
             'count'  => (int) $row->cnt,
         );
     }
@@ -2334,7 +2362,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.6.5';
+    $plugin_version = '2.6.8';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
