@@ -1,6 +1,6 @@
 # WP VisitChart — Complete User Manual
 
-> Version 2.5.8 · Created by Jens Hummelmose · Public Domain (Unlicense)
+> Version 2.7.1 · Created by Jens Hummelmose · Public Domain (Unlicense)
 > GitHub: [hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)
 
 ---
@@ -542,5 +542,28 @@ The same moon/sun toggle button sits on the right side of the sticky live bar.
 
 ---
 
-*WP VisitChart v2.5.8 · Public Domain (Unlicense) · Created by Jens Hummelmose*
+
+---
+
+## 18. Updates Page
+
+Navigate to **WP VisitChart → Updates** to check whether a newer version is available on GitHub.
+
+**Automatic check:** The plugin checks the GitHub releases API once every 24 hours, cached via a WordPress transient. Failed checks (e.g. network issues) are retried after 1 hour rather than waiting the full 24 hours.
+
+**Menu badge:** A red notification badge — matching WordPress's own plugin update indicator style — appears next to "Updates" in the admin menu whenever a newer version is available on GitHub.
+
+**Page contents:**
+
+- Your currently installed version number
+- A status banner: green if you're running the latest version, red if an update is available
+- A **Download** button linking directly to the release zip file — only shown when an update is actually available
+- A **Se på GitHub** link to view the full release on GitHub
+- The complete release notes for the latest version, rendered from Markdown to formatted HTML
+
+**Note:** If your installed version is already equal to or newer than the latest GitHub release, the download button is hidden — only the GitHub link is shown, since there's nothing newer to download.
+
+---
+
+*WP VisitChart v2.7.1 · Public Domain (Unlicense) · Created by Jens Hummelmose*
 *Source: [github.com/hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)*

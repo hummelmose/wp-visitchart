@@ -1,6 +1,6 @@
 # WP VisitChart — Komplet Brugermanual
 
-> Version 2.5.8 · Lavet af Jens Hummelmose · Public Domain (Unlicense)
+> Version 2.7.1 · Lavet af Jens Hummelmose · Public Domain (Unlicense)
 > GitHub: [hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)
 
 ---
@@ -355,5 +355,28 @@ Samme måne/sol toggle-knap sidder i højre side af den sticky live-bjælke.
 
 ---
 
-*WP VisitChart v2.5.8 · Public Domain (Unlicense) · Lavet af Jens Hummelmose*
+
+---
+
+## 18. Opdateringssiden
+
+Gå til **WP VisitChart → Opdateringer** for at tjekke om der er en nyere version tilgængelig på GitHub.
+
+**Automatisk tjek:** Pluginet tjekker GitHub's releases API én gang hver 24. time, cachet via en WordPress-transient. Fejlede tjek (f.eks. netværksproblemer) forsøges igen efter 1 time i stedet for at vente hele døgnet ud.
+
+**Menu-badge:** Et rødt notifikationsbadge — samme stil som WordPress' eget plugin-opdateringsikon — vises ved siden af "Opdateringer" i admin-menuen, når der er en nyere version tilgængelig på GitHub.
+
+**Sidens indhold:**
+
+- Din installerede versionsnummer
+- En statusbanner: grøn hvis du kører nyeste version, rød hvis en opdatering er tilgængelig
+- En **Download**-knap der linker direkte til release-zip-filen — vises kun når en opdatering faktisk er tilgængelig
+- Et **Se på GitHub**-link til at se den fulde release på GitHub
+- De komplette release notes for den nyeste version, renderet fra Markdown til formateret HTML
+
+**Bemærk:** Hvis din installerede version allerede er lig med eller nyere end den seneste GitHub-release, skjules download-knappen — kun GitHub-linket vises, da der ikke er noget nyere at downloade.
+
+---
+
+*WP VisitChart v2.7.1 · Public Domain (Unlicense) · Lavet af Jens Hummelmose*
 *Kildekode: [github.com/hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)*
