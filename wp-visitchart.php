@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.7.1
+ * Version: 2.7.2
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -2063,6 +2063,16 @@ add_action( 'admin_menu', 'lstats_admin_menu' );
  * Returnerer false ved fejl (netværksproblemer, rate limit osv.)
  */
 function lstats_get_latest_release() {
+    // Ryd cachen automatisk, hvis plugin-versionen er ændret siden sidste tjek
+    // (typisk lige efter en opdatering) - sikrer vi altid viser status for den
+    // faktisk installerede version, uden at skulle vente på 24-timers udløb.
+    $current_version = get_plugin_data( __FILE__ )['Version'];
+    $last_checked_version = get_option( 'lstats_last_checked_version' );
+    if ( $last_checked_version !== $current_version ) {
+        delete_transient( 'lstats_latest_release' );
+        update_option( 'lstats_last_checked_version', $current_version );
+    }
+
     $cached = get_transient( 'lstats_latest_release' );
     if ( false !== $cached ) {
         return $cached;
@@ -2593,7 +2603,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.7.1';
+    $plugin_version = '2.7.2';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
