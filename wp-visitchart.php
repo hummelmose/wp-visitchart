@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.7.2
+ * Version: 2.7.3
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -2278,6 +2278,21 @@ function lstats_render_updates_page() {
                     <?php echo wp_kses_post( lstats_markdown_to_html( $release['body'] ) ); ?>
                 </div>
 
+                <?php if ( ! empty( $release['download_url'] ) && $update_available ) : ?>
+                    <hr style="margin:20px 0;">
+                    <p>
+                        <a href="<?php echo esc_url( $release['download_url'] ); ?>" class="button button-primary">
+                            <?php
+                            printf(
+                                /* translators: %s: version tag */
+                                esc_html__( 'Download %s', 'wp-visitchart' ),
+                                esc_html( $release['tag'] )
+                            );
+                            ?>
+                        </a>
+                    </p>
+                <?php endif; ?>
+
             <?php endif; ?>
 
         </div>
@@ -2603,7 +2618,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.7.2';
+    $plugin_version = '2.7.3';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
