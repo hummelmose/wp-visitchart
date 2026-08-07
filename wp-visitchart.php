@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.6.8
+ * Version: 2.7.1
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -1996,6 +1996,20 @@ function lstats_admin_menu() {
         'lstats-settings',
         'lstats_render_settings_page'
     );
+
+    $update_available = lstats_is_update_available();
+    $badge = $update_available
+        ? ' <span class="update-plugins count-1"><span class="update-count">1</span></span>'
+        : '';
+
+    add_submenu_page(
+        'lstats-dashboard',
+        __( 'WP VisitChart - Opdateringer', 'wp-visitchart' ),
+        __( 'Opdateringer', 'wp-visitchart' ) . $badge,
+        'manage_options',
+        'lstats-updates',
+        'lstats_render_updates_page'
+    );
 }
 
 /**
@@ -2043,6 +2057,223 @@ add_action( 'admin_head', function() {
     }
 } );
 add_action( 'admin_menu', 'lstats_admin_menu' );
+
+/**
+ * Henter seneste release fra GitHub, cachet 24 timer.
+ * Returnerer false ved fejl (netværksproblemer, rate limit osv.)
+ */
+function lstats_get_latest_release() {
+    $cached = get_transient( 'lstats_latest_release' );
+    if ( false !== $cached ) {
+        return $cached;
+    }
+
+    $response = wp_remote_get(
+        'https://api.github.com/repos/hummelmose/wp-visitchart/releases/latest',
+        array(
+            'timeout' => 8,
+            'headers' => array( 'Accept' => 'application/vnd.github.v3+json' ),
+        )
+    );
+
+    if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+        // Fejl ved kald - cache et tomt resultat i 1 time så vi ikke spammer GitHub ved gentagne fejl
+        set_transient( 'lstats_latest_release', array( 'error' => true ), HOUR_IN_SECONDS );
+        return false;
+    }
+
+    $body = json_decode( wp_remote_retrieve_body( $response ), true );
+    if ( empty( $body['tag_name'] ) ) {
+        set_transient( 'lstats_latest_release', array( 'error' => true ), HOUR_IN_SECONDS );
+        return false;
+    }
+
+    $download_url = '';
+    if ( ! empty( $body['assets'] ) ) {
+        foreach ( $body['assets'] as $asset ) {
+            if ( isset( $asset['name'] ) && 'wp-visitchart.zip' === $asset['name'] ) {
+                $download_url = $asset['browser_download_url'];
+                break;
+            }
+        }
+    }
+    // Fallback til zipball hvis intet asset er vedhæftet
+    if ( empty( $download_url ) && ! empty( $body['zipball_url'] ) ) {
+        $download_url = $body['zipball_url'];
+    }
+
+    $release = array(
+        'tag'          => $body['tag_name'],
+        'name'         => $body['name'] ?? $body['tag_name'],
+        'body'         => $body['body'] ?? '',
+        'html_url'     => $body['html_url'] ?? '',
+        'download_url' => $download_url,
+        'published_at' => $body['published_at'] ?? '',
+    );
+
+    set_transient( 'lstats_latest_release', $release, DAY_IN_SECONDS );
+    return $release;
+}
+
+/**
+ * Sammenligner installeret version med seneste GitHub-release.
+ */
+function lstats_is_update_available() {
+    $release = lstats_get_latest_release();
+    if ( ! $release || ! empty( $release['error'] ) ) {
+        return false;
+    }
+
+    $current_version = get_plugin_data( __FILE__ )['Version'];
+    $latest_version  = ltrim( $release['tag'], 'v' );
+
+    return version_compare( $latest_version, $current_version, '>' );
+}
+
+/**
+ * Meget letvægts Markdown-til-HTML konvertering til release notes.
+ * Dækker de elementer vi selv bruger i vores changelogs: overskrifter,
+ * bold, kodeblokke, inline kode, lister, links og vandrette linjer.
+ */
+function lstats_markdown_to_html( $markdown ) {
+    $html = esc_html( $markdown );
+
+    // Kodeblokke (```...```) - skal ske før andre erstatninger
+    $html = preg_replace_callback( '/```([a-z]*)\n(.*?)```/s', function( $m ) {
+        return '<pre style="background:#f0f0f1;padding:12px;border-radius:4px;overflow-x:auto;"><code>' . $m[2] . '</code></pre>';
+    }, $html );
+
+    // Overskrifter
+    $html = preg_replace( '/^### (.+)$/m', '<h4>$1</h4>', $html );
+    $html = preg_replace( '/^## (.+)$/m', '<h3>$1</h3>', $html );
+    $html = preg_replace( '/^# (.+)$/m', '<h2>$1</h2>', $html );
+
+    // Bold
+    $html = preg_replace( '/\*\*(.+?)\*\*/', '<strong>$1</strong>', $html );
+
+    // Inline kode
+    $html = preg_replace( '/`([^`]+)`/', '<code style="background:#f0f0f1;padding:2px 5px;border-radius:3px;">$1</code>', $html );
+
+    // Links
+    $html = preg_replace( '/\[([^\]]+)\]\(([^)]+)\)/', '<a href="$2" target="_blank" rel="noopener">$1</a>', $html );
+
+    // Vandret linje
+    $html = preg_replace( '/^---$/m', '<hr>', $html );
+
+    // Lister - saml linjer der starter med "- " i <ul>
+    $lines  = explode( "\n", $html );
+    $output = array();
+    $in_list = false;
+    foreach ( $lines as $line ) {
+        if ( preg_match( '/^- (.+)$/', $line, $m ) ) {
+            if ( ! $in_list ) {
+                $output[] = '<ul style="margin:8px 0;">';
+                $in_list = true;
+            }
+            $output[] = '<li>' . $m[1] . '</li>';
+        } else {
+            if ( $in_list ) {
+                $output[] = '</ul>';
+                $in_list = false;
+            }
+            $output[] = $line;
+        }
+    }
+    if ( $in_list ) {
+        $output[] = '</ul>';
+    }
+    $html = implode( "\n", $output );
+
+    // Dobbelte linjeskift bliver til afsnit
+    $html = preg_replace( '/\n\n+/', '</p><p>', $html );
+    $html = '<p>' . $html . '</p>';
+    $html = str_replace( '<p></p>', '', $html );
+    $html = str_replace( '<p><h', '<h', $html );
+    $html = str_replace( "</h2></p>\n<p>", '</h2>', $html );
+    $html = preg_replace( '/<p>(<h[234]>)/', '$1', $html );
+    $html = preg_replace( '/(<\/h[234]>)<\/p>/', '$1', $html );
+    $html = preg_replace( '/<p>(<ul)/', '$1', $html );
+    $html = preg_replace( '/(<\/ul>)<\/p>/', '$1', $html );
+    $html = preg_replace( '/<p>(<hr>)<\/p>/', '$1', $html );
+    $html = preg_replace( '/<p>(<pre)/', '$1', $html );
+    $html = preg_replace( '/(<\/pre>)<\/p>/', '$1', $html );
+
+    return $html;
+}
+
+/**
+ * Renderer Opdateringer-siden: seneste release notes + download-knap.
+ */
+function lstats_render_updates_page() {
+    $release          = lstats_get_latest_release();
+    $current_version  = get_plugin_data( __FILE__ )['Version'];
+    $update_available = lstats_is_update_available();
+    ?>
+    <div class="wrap">
+        <h1><?php esc_html_e( 'WP VisitChart - Opdateringer', 'wp-visitchart' ); ?></h1>
+
+        <div style="background:#fff; border:1px solid #dcdcde; border-radius:4px; padding:20px; margin-top:16px; max-width:800px;">
+
+            <p style="margin-top:0;">
+                <?php esc_html_e( 'Din installerede version:', 'wp-visitchart' ); ?>
+                <strong><?php echo esc_html( $current_version ); ?></strong>
+            </p>
+
+            <?php if ( ! $release || ! empty( $release['error'] ) ) : ?>
+
+                <p style="color:#d63638;">
+                    <?php esc_html_e( 'Kunne ikke hente opdateringsinformation fra GitHub. Prøv igen senere.', 'wp-visitchart' ); ?>
+                </p>
+
+            <?php else : ?>
+
+                <?php if ( $update_available ) : ?>
+                    <div style="background:#fcf0f1; border-left:4px solid #d63638; padding:10px 14px; margin-bottom:16px;">
+                        <strong><?php esc_html_e( 'Der er en ny version tilgængelig!', 'wp-visitchart' ); ?></strong>
+                        <?php echo ' ' . esc_html( $release['tag'] ); ?>
+                    </div>
+                <?php else : ?>
+                    <div style="background:#edfaef; border-left:4px solid #00a32a; padding:10px 14px; margin-bottom:16px;">
+                        <?php esc_html_e( 'Du kører den nyeste version.', 'wp-visitchart' ); ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ( ! empty( $release['download_url'] ) && $update_available ) : ?>
+                    <p>
+                        <a href="<?php echo esc_url( $release['download_url'] ); ?>" class="button button-primary">
+                            <?php
+                            printf(
+                                /* translators: %s: version tag */
+                                esc_html__( 'Download %s', 'wp-visitchart' ),
+                                esc_html( $release['tag'] )
+                            );
+                            ?>
+                        </a>
+                        <a href="<?php echo esc_url( $release['html_url'] ); ?>" class="button" target="_blank" rel="noopener" style="margin-left:8px;">
+                            <?php esc_html_e( 'Se på GitHub', 'wp-visitchart' ); ?>
+                        </a>
+                    </p>
+                <?php elseif ( ! empty( $release['html_url'] ) ) : ?>
+                    <p>
+                        <a href="<?php echo esc_url( $release['html_url'] ); ?>" class="button" target="_blank" rel="noopener">
+                            <?php esc_html_e( 'Se på GitHub', 'wp-visitchart' ); ?>
+                        </a>
+                    </p>
+                <?php endif; ?>
+
+                <hr style="margin:20px 0;">
+
+                <h2 style="margin-top:0;"><?php echo esc_html( $release['name'] ); ?></h2>
+                <div class="lstats-release-notes">
+                    <?php echo wp_kses_post( lstats_markdown_to_html( $release['body'] ) ); ?>
+                </div>
+
+            <?php endif; ?>
+
+        </div>
+    </div>
+    <?php
+}
 
 /**
  * Håndterer klik på "Nulstil adgangskode"-knappen for mobil-siden
@@ -2362,7 +2593,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.6.8';
+    $plugin_version = '2.7.1';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 

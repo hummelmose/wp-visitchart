@@ -307,7 +307,7 @@
                 var li = document.createElement('li');
                 var num = String(index + 1).padStart(2, '0');
                 li.innerHTML = '<span class="lstats-page-title"><span class="lstats-num">' + num + ':</span>' +
-                                '<span class="lstats-page-domain">' + escapeHtml(ref.domain) + ':</span></span>' +
+                                '<span class="lstats-page-domain">' + escapeHtml(ref.domain) + '</span></span>' +
                                 '<span class="lstats-page-count"> ' + formatNumber(ref.count) + '</span>';
                 domainList.appendChild(li);
             });
@@ -442,3 +442,5 @@
 /* v2.5.2 */
 // 2.5.7
 // 2.6.5
+// 2.6.7
+// 2.7.0
