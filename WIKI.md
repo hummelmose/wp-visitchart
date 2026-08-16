@@ -1,6 +1,6 @@
 # WP VisitChart — Complete User Manual
 
-> Version 2.7.1 · Created by Jens Hummelmose · Public Domain (Unlicense)
+> Version 2.8.1 · Created by Jens Hummelmose · Public Domain (Unlicense)
 > GitHub: [hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)
 
 ---

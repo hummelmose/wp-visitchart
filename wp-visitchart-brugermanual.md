@@ -1,6 +1,6 @@
 # WP VisitChart — Komplet Brugermanual
 
-> Version 2.7.1 · Lavet af Jens Hummelmose · Public Domain (Unlicense)
+> Version 2.8.1 · Lavet af Jens Hummelmose · Public Domain (Unlicense)
 > GitHub: [hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)
 
 ---
@@ -378,5 +378,24 @@ Gå til **WP VisitChart → Opdateringer** for at tjekke om der er en nyere vers
 
 ---
 
-*WP VisitChart v2.7.1 · Public Domain (Unlicense) · Lavet af Jens Hummelmose*
+
+---
+
+## 19. Dashboard widget-filtre
+
+WordPress dashboard-widget'en (Afsnit 7) har tre filterknapper øverst: **Alle**, **Artikler** og **Sider**.
+
+**Sådan virker det:**
+
+- Klik på et filter genindlæser kun tabel-indholdet via AJAX — resten af WordPress-dashboardet reloades ikke
+- Hvert filter har sin egen 60-sekunders cache, så hurtige skift mellem faner ikke gentagne gange rammer databasen, mens data stadig forbliver rimeligt friskt
+- "Artikler"- og "Sider"-filtrene joiner mod `wp_posts`-tabellen på primærnøglen, hvilket har ubetydelig performance-omkostning da `lstats_post_views` typisk kun indeholder få hundrede rækker for den aktuelle dag
+
+**Standardfilter-indstilling:**
+
+Under **WP VisitChart → Indstillinger → Dashboard widget - standardfilter** kan du vælge hvilket filter widget'en åbner med som standard, når WordPress-dashboardet indlæses. Vælg Alle, Artikler eller Sider. Indstillingen påvirker kun startvisningen — du kan stadig frit skifte mellem filtrene bagefter.
+
+---
+
+*WP VisitChart v2.8.1 · Public Domain (Unlicense) · Lavet af Jens Hummelmose*
 *Kildekode: [github.com/hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)*

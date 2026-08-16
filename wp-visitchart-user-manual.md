@@ -1,6 +1,6 @@
 # WP VisitChart — Complete User Manual
 
-> Version 2.7.1 · Created by Jens Hummelmose · Public Domain (Unlicense)
+> Version 2.8.1 · Created by Jens Hummelmose · Public Domain (Unlicense)
 > GitHub: [hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)
 
 ---
@@ -565,5 +565,24 @@ Navigate to **WP VisitChart → Updates** to check whether a newer version is av
 
 ---
 
-*WP VisitChart v2.7.1 · Public Domain (Unlicense) · Created by Jens Hummelmose*
+
+---
+
+## 19. Dashboard Widget Filters
+
+The WordPress dashboard widget (Section 7) includes three filter buttons at the top: **Alle** (All), **Artikler** (Posts), and **Sider** (Pages).
+
+**How it works:**
+
+- Clicking a filter refreshes only the table content via AJAX — the rest of the WordPress dashboard does not reload
+- Each filter has its own 60-second cache, so switching between tabs quickly doesn't repeatedly query the database while still staying reasonably fresh
+- The "Posts" and "Pages" filters join against the `wp_posts` table on the primary key, which carries negligible performance cost since `lstats_post_views` typically only contains a few hundred rows for the current day
+
+**Default filter setting:**
+
+Under **WP VisitChart → Settings → Dashboard widget - standardfilter**, you can choose which filter the widget opens with by default when the WordPress dashboard loads. Choose Alle, Artikler, or Sider. The setting only affects the initial view — you can still freely switch between filters afterwards.
+
+---
+
+*WP VisitChart v2.8.1 · Public Domain (Unlicense) · Created by Jens Hummelmose*
 *Source: [github.com/hummelmose/wp-visitchart](https://github.com/hummelmose/wp-visitchart)*
