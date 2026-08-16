@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.7.3
+ * Version: 2.8.1
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -2333,6 +2333,11 @@ function lstats_handle_save_settings() {
     update_option( 'lstats_post_views_enabled', isset( $_POST['lstats_post_views_enabled'] ) ? '1' : '0' );
     update_option( 'lstats_exclude_logged_in', isset( $_POST['lstats_exclude_logged_in'] ) ? '1' : '0' );
     update_option( 'lstats_featured_category', absint( $_POST['lstats_featured_category'] ?? 0 ) );
+    $default_widget_filter = sanitize_text_field( wp_unslash( $_POST['lstats_default_widget_filter'] ?? 'all' ) );
+    if ( ! in_array( $default_widget_filter, array( 'all', 'post', 'page' ), true ) ) {
+        $default_widget_filter = 'all';
+    }
+    update_option( 'lstats_default_widget_filter', $default_widget_filter );
 
     wp_safe_redirect( admin_url( 'admin.php?page=lstats-settings&lstats_settings_saved=1' ) );
     exit;
@@ -2384,6 +2389,7 @@ function lstats_render_settings_page() {
     $post_views_enabled    = lstats_is_post_views_enabled();
     $exclude_logged_in     = lstats_exclude_logged_in_users();
     $featured_category_id  = (int) get_option( 'lstats_featured_category', 0 );
+    $default_widget_filter = get_option( 'lstats_default_widget_filter', 'all' );
     $mobile_url            = add_query_arg( 'lstats_mobile', get_option( 'lstats_public_token' ), home_url( '/' ) );
     ?>
     <div class="wrap">
@@ -2465,6 +2471,17 @@ function lstats_render_settings_page() {
                             ?>
                         </select>
                         <p class="description"><?php esc_html_e( 'Artikler i denne kategori vises med ⭐ i "Mest aktive sider" og "Mest besøgte sider".', 'wp-visitchart' ); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e( 'Dashboard widget - standardfilter', 'wp-visitchart' ); ?></th>
+                    <td>
+                        <select name="lstats_default_widget_filter">
+                            <option value="all" <?php selected( $default_widget_filter, 'all' ); ?>><?php esc_html_e( 'Alle', 'wp-visitchart' ); ?></option>
+                            <option value="post" <?php selected( $default_widget_filter, 'post' ); ?>><?php esc_html_e( 'Artikler', 'wp-visitchart' ); ?></option>
+                            <option value="page" <?php selected( $default_widget_filter, 'page' ); ?>><?php esc_html_e( 'Sider', 'wp-visitchart' ); ?></option>
+                        </select>
+                        <p class="description"><?php esc_html_e( 'Hvilket filter "Top 20 i dag"-widget\'en på WordPress-dashboardet skal vise som standard, når siden indlæses.', 'wp-visitchart' ); ?></p>
                     </td>
                 </tr>
             </table>
@@ -2618,7 +2635,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.7.3';
+    $plugin_version = '2.8.1';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
@@ -2678,19 +2695,57 @@ function lstats_register_dashboard_widget() {
 }
 add_action( 'wp_dashboard_setup', 'lstats_register_dashboard_widget' );
 
-function lstats_render_dashboard_widget() {
+/**
+ * Henter top 20 rækker for et givet post_type-filter (alle/post/page),
+ * cachet separat per filter i 60 sekunder så hurtige knap-klik ikke
+ * rammer databasen unødvendigt, men data stadig føles friskt.
+ */
+function lstats_get_widget_rows( $filter ) {
+    $cache_key = 'lstats_widget_rows_' . $filter;
+    $cached    = get_transient( $cache_key );
+    if ( false !== $cached ) {
+        return $cached;
+    }
+
     global $wpdb;
     $views_table = $wpdb->prefix . LSTATS_VIEWS_TABLE;
     $today       = date( 'Y-m-d', current_time( 'timestamp' ) );
 
-    $rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT post_id, views_today, views_total + views_today AS views_total
-         FROM $views_table
-         WHERE count_date = %s AND views_today > 0
-         ORDER BY views_today DESC
-         LIMIT 20",
-        $today
-    ) );
+    if ( 'all' === $filter ) {
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT v.post_id, v.views_today, v.views_total + v.views_today AS views_total
+             FROM $views_table v
+             WHERE v.count_date = %s AND v.views_today > 0
+             ORDER BY v.views_today DESC
+             LIMIT 20",
+            $today
+        ) );
+    } else {
+        // 'post' eller 'page' - join mod wp_posts på primærnøglen (ID), som
+        // altid er indekseret, så dette join er billigt uanset tabelstørrelse.
+        $post_type = ( 'page' === $filter ) ? 'page' : 'post';
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT v.post_id, v.views_today, v.views_total + v.views_today AS views_total
+             FROM $views_table v
+             INNER JOIN {$wpdb->posts} p ON p.ID = v.post_id AND p.post_type = %s
+             WHERE v.count_date = %s AND v.views_today > 0
+             ORDER BY v.views_today DESC
+             LIMIT 20",
+            $post_type,
+            $today
+        ) );
+    }
+
+    set_transient( $cache_key, $rows, 60 );
+    return $rows;
+}
+
+/**
+ * Bygger selve tabel-HTML'en for widget'en - genbruges både ved almindeligt
+ * page load og ved AJAX-filterskift, så markup aldrig kan komme ud af sync.
+ */
+function lstats_render_widget_table( $filter ) {
+    $rows = lstats_get_widget_rows( $filter );
 
     if ( empty( $rows ) ) {
         echo '<p style="color:#8c8f94;">' . esc_html__( 'Ingen sidevisninger registreret i dag endnu.', 'wp-visitchart' ) . '</p>';
@@ -2725,3 +2780,87 @@ function lstats_render_dashboard_widget() {
     echo '</tbody></table>';
     echo '<p style="text-align:right; margin:8px 0 0; font-size:12px;"><a href="' . esc_url( admin_url( 'admin.php?page=lstats-dashboard' ) ) . '">' . esc_html__( 'Gå til WP VisitChart →', 'wp-visitchart' ) . '</a></p>';
 }
+
+/**
+ * Render widget'ens ydre skal: filter-knapper + tabel-container.
+ * Selve tabellen genindlæses via AJAX når man skifter filter, uden
+ * at hele wp-admin-dashboardet skal reloades.
+ */
+function lstats_render_dashboard_widget() {
+    $default_filter = get_option( 'lstats_default_widget_filter', 'all' );
+    if ( ! in_array( $default_filter, array( 'all', 'post', 'page' ), true ) ) {
+        $default_filter = 'all';
+    }
+
+    $labels = array(
+        'all'  => __( 'Alle', 'wp-visitchart' ),
+        'post' => __( 'Artikler', 'wp-visitchart' ),
+        'page' => __( 'Sider', 'wp-visitchart' ),
+    );
+    ?>
+    <div id="lstats-widget-filters" style="margin-bottom:10px;">
+        <?php foreach ( $labels as $key => $label ) : ?>
+            <button type="button"
+                class="lstats-widget-filter-btn<?php echo ( $default_filter === $key ) ? ' is-active' : ''; ?>"
+                data-filter="<?php echo esc_attr( $key ); ?>"
+                style="cursor:pointer; border:1px solid #dcdcde; background:<?php echo ( $default_filter === $key ) ? '#2271b1' : '#fff'; ?>; color:<?php echo ( $default_filter === $key ) ? '#fff' : '#1d2327'; ?>; border-radius:3px; padding:3px 10px; font-size:12px; margin-right:4px;">
+                <?php echo esc_html( $label ); ?>
+            </button>
+        <?php endforeach; ?>
+    </div>
+
+    <div id="lstats-widget-table">
+        <?php lstats_render_widget_table( $default_filter ); ?>
+    </div>
+
+    <script>
+    (function() {
+        var container = document.getElementById('lstats-widget-table');
+        var buttons   = document.querySelectorAll('.lstats-widget-filter-btn');
+
+        buttons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var filter = btn.getAttribute('data-filter');
+
+                buttons.forEach(function(b) {
+                    var active = (b === btn);
+                    b.classList.toggle('is-active', active);
+                    b.style.background = active ? '#2271b1' : '#fff';
+                    b.style.color = active ? '#fff' : '#1d2327';
+                });
+
+                container.style.opacity = '0.5';
+
+                var fd = new FormData();
+                fd.append('action', 'lstats_widget_filter');
+                fd.append('nonce', '<?php echo esc_js( wp_create_nonce( 'lstats_widget_filter_nonce' ) ); ?>');
+                fd.append('filter', filter);
+
+                fetch(ajaxurl, { method: 'POST', body: fd })
+                    .then(function(r) { return r.text(); })
+                    .then(function(html) {
+                        container.innerHTML = html;
+                        container.style.opacity = '1';
+                    });
+            });
+        });
+    })();
+    </script>
+    <?php
+}
+
+/**
+ * AJAX-endpoint der returnerer tabel-HTML for et givet filter.
+ * Bruges af filter-knapperne i dashboard-widget'en.
+ */
+add_action( 'wp_ajax_lstats_widget_filter', function() {
+    check_ajax_referer( 'lstats_widget_filter_nonce', 'nonce' );
+
+    $filter = isset( $_POST['filter'] ) ? sanitize_text_field( wp_unslash( $_POST['filter'] ) ) : 'all';
+    if ( ! in_array( $filter, array( 'all', 'post', 'page' ), true ) ) {
+        $filter = 'all';
+    }
+
+    lstats_render_widget_table( $filter );
+    wp_die();
+} );
