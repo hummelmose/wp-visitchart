@@ -346,6 +346,32 @@ html.lstats-dark {
     text-align: right;
 }
 
+.lstats-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--ls-border);
+}
+
+.lstats-list-header .lstats-page-count,
+.lstats-list-header .lstats-page-total {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--ls-faint);
+    font-weight: 400;
+}
+
+.lstats-page-total {
+    flex-shrink: 0;
+    width: 64px;
+    text-align: right;
+    color: var(--ls-faint);
+    font-size: 12px;
+}
+
 .lstats-value-wrap {
     display: flex;
     justify-content: flex-end;

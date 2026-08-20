@@ -13,6 +13,13 @@
         }
     }
 
+    function formatCappedNumber(n) {
+        if (n > 99999) {
+            return '+' + Math.floor(n / 1000) + 'K';
+        }
+        return formatNumber(n);
+    }
+
     function buildLayout() {
         var i18n = lstatsAdmin.i18n;
         app.innerHTML =
@@ -46,6 +53,7 @@
                 '<div class="lstats-col">' +
                     '<div class="lstats-card">' +
                         '<div class="lstats-label">' + escapeHtml(i18n.mostVisitedToday) + '</div>' +
+                        '<div class="lstats-list-header"><span></span><span class="lstats-right-col"><span class="lstats-badge-slot"></span><span class="lstats-page-count">' + escapeHtml(i18n.todayShort) + '</span><span class="lstats-page-total">' + escapeHtml(i18n.totalShort) + '</span></span></div>' +
                         '<ul id="lstats-top-pages-list"></ul>' +
                     '</div>' +
                     '<div class="lstats-card">' +
@@ -267,7 +275,7 @@
                 var num = String(index + 1).padStart(2, '0');
                 li.innerHTML = '<span class="lstats-page-title"><span class="lstats-num">' + num + ':</span> ' +
                                 '<a href="' + escapeHtml(page.url) + '" target="_blank" rel="noopener">' + escapeHtml(page.title) + '</a></span>' +
-                                '<span class="lstats-right-col"><span class="lstats-badge-slot">' + (page.featured ? '⭐' : '') + '</span><span class="lstats-page-count">' + formatNumber(page.visitors) + '</span></span>';
+                                '<span class="lstats-right-col"><span class="lstats-badge-slot">' + (page.featured ? '⭐' : '') + '</span><span class="lstats-page-count">' + formatNumber(page.visitors) + '</span><span class="lstats-page-total">' + formatCappedNumber(page.total) + '</span></span>';
                 list.appendChild(li);
             });
         });
@@ -444,3 +452,5 @@
 // 2.6.5
 // 2.6.7
 // 2.7.0
+// 2.8.2
+// 2.8.3

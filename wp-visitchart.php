@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.8.1
+ * Version: 2.8.3
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -750,6 +750,29 @@ function lstats_render_mobile_page( $token ) {
             color: var(--m-accent);
             flex-shrink: 0;
         }
+        .count-total {
+            flex-shrink: 0;
+            width: 48px;
+            text-align: right;
+            color: var(--m-faint);
+            font-size: 11px;
+        }
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 6px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid var(--m-border);
+        }
+        .list-header .count-num,
+        .list-header .count-total {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--m-faint);
+            font-weight: 400;
+        }
         .value-wrap {
             display: flex;
             justify-content: flex-end;
@@ -830,6 +853,7 @@ function lstats_render_mobile_page( $token ) {
 
     <div class="card">
         <div class="label"><?php esc_html_e( 'Mest besøgte sider i dag', 'wp-visitchart' ); ?></div>
+        <div class="list-header"><span></span><span class="right-col"><span class="badge-slot"></span><span class="count-num"><?php esc_html_e( 'I dag', 'wp-visitchart' ); ?></span><span class="count-total"><?php esc_html_e( 'Total', 'wp-visitchart' ); ?></span></span></div>
         <ul class="page-list" id="m-top-pages-list"></ul>
     </div>
 
@@ -894,6 +918,13 @@ function lstats_render_mobile_page( $token ) {
             } catch (e) {
                 return n;
             }
+        }
+
+        function formatCappedNumber(n) {
+            if (n > 99999) {
+                return '+' + Math.floor(n / 1000) + 'K';
+            }
+            return formatNumber(n);
         }
 
         var chartInstance = null;
@@ -1105,7 +1136,7 @@ function lstats_render_mobile_page( $token ) {
                     var num = String(index + 1).padStart(2, '0');
                     li.innerHTML = '<span class="page-title"><b>' + num + ':</b> ' +
                                     '<a href="' + escapeHtml(page.url) + '">' + escapeHtml(page.title) + '</a></span>' +
-                                    '<span class="right-col"><span class="badge-slot">' + (page.featured ? '⭐' : '') + '</span><span class="count-num">' + formatNumber(page.visitors) + '</span></span>';
+                                    '<span class="right-col"><span class="badge-slot">' + (page.featured ? '⭐' : '') + '</span><span class="count-num">' + formatNumber(page.visitors) + '</span><span class="count-total">' + formatCappedNumber(page.total) + '</span></span>';
                     list.appendChild(li);
                 });
             });
@@ -1738,7 +1769,7 @@ function lstats_get_top_pages( WP_REST_Request $request ) {
     $today = date( 'Y-m-d', current_time( 'timestamp' ) );
 
     $rows = $wpdb->get_results( $wpdb->prepare(
-        "SELECT post_id, views_today AS visitors
+        "SELECT post_id, views_today AS visitors, views_total + views_today AS total
          FROM $views_table
          WHERE count_date = %s AND views_today > 0
          ORDER BY views_today DESC
@@ -1763,6 +1794,7 @@ function lstats_get_top_pages( WP_REST_Request $request ) {
             'post_id'  => (int) $row->post_id,
             'title'    => $title ? $title : ( '#' . $row->post_id ),
             'visitors' => (int) $row->visitors,
+            'total'    => (int) $row->total,
             'url'      => get_permalink( $row->post_id ),
             'featured' => $is_featured,
         );
@@ -2046,6 +2078,7 @@ add_action( 'admin_head', function() {
         .toplevel_page_lstats-dashboard .wrap { padding-top: 58px; padding-bottom: 0; padding-left: 20px; padding-right: 20px; }
         .toplevel_page_lstats-dashboard .wrap > h1 { margin-top: 6px !important; margin-bottom: 6px !important; padding: 0 !important; }
         .toplevel_page_lstats-dashboard .lstats-page-count { color: var(--ls-accent) !important; font-weight: 600 !important; width: 48px !important; text-align: right !important; flex-shrink: 0 !important; }
+        .toplevel_page_lstats-dashboard .lstats-page-total { width: 48px !important; text-align: right !important; flex-shrink: 0 !important; font-size: 12px !important; }
         .toplevel_page_lstats-dashboard .lstats-badge-slot { width: 22px !important; min-width: 22px !important; flex-shrink: 0 !important; text-align: center !important; }
         .toplevel_page_lstats-dashboard .lstats-right-col { display: flex !important; align-items: center !important; flex-shrink: 0 !important; }
         .toplevel_page_lstats-dashboard #lstats-app { margin-top: 16px; }
@@ -2635,7 +2668,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.8.1';
+    $plugin_version = '2.8.3';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
@@ -2674,6 +2707,8 @@ function lstats_enqueue_admin( $hook ) {
             'desktop'            => __( 'Desktop', 'wp-visitchart' ),
             'trending'           => __( 'Trending', 'wp-visitchart' ),
             'featured'           => __( 'Featured', 'wp-visitchart' ),
+            'todayShort'         => __( 'I dag', 'wp-visitchart' ),
+            'totalShort'         => __( 'Total', 'wp-visitchart' ),
         ),
     ) );
 }
