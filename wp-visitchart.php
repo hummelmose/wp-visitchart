@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.8.3
+ * Version: 2.8.4
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -2609,6 +2609,38 @@ function lstats_render_views_column( $column, $post_id ) {
 add_action( 'manage_posts_custom_column', 'lstats_render_views_column', 10, 2 );
 add_action( 'manage_pages_custom_column', 'lstats_render_views_column', 10, 2 );
 
+/**
+ * Viser samlet sidevisningsantal i submitbox'en på selve redigeringssiden
+ * for et indlæg/side (samme boks hvor "Status", "Synlighed" osv. vises).
+ * Ét primærnøgle-opslag, ingen performance-bekymring.
+ */
+function lstats_render_submitbox_views() {
+    if ( ! lstats_is_post_views_enabled() ) {
+        return;
+    }
+
+    global $post;
+    if ( ! $post || ! in_array( get_post_type( $post ), array( 'post', 'page' ), true ) ) {
+        return;
+    }
+
+    global $wpdb;
+    $views_table = $wpdb->prefix . LSTATS_VIEWS_TABLE;
+    $row = $wpdb->get_row( $wpdb->prepare(
+        "SELECT views_today, views_total FROM $views_table WHERE post_id = %d",
+        (int) $post->ID
+    ) );
+
+    $total = $row ? ( (int) $row->views_total + (int) $row->views_today ) : 0;
+    ?>
+    <div class="misc-pub-section">
+        <span class="dashicons dashicons-chart-line" style="margin-right:6px;"></span>
+        <?php esc_html_e( 'Sidevisninger:', 'wp-visitchart' ); ?> <strong><?php echo esc_html( number_format_i18n( $total ) ); ?></strong>
+    </div>
+    <?php
+}
+add_action( 'post_submitbox_misc_actions', 'lstats_render_submitbox_views' );
+
 function lstats_sortable_views_column( $columns ) {
     if ( lstats_is_post_views_enabled() ) {
         $columns['lstats_views'] = 'lstats_views';
@@ -2668,7 +2700,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.8.3';
+    $plugin_version = '2.8.4';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
