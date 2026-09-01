@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP VisitChart
  * Description: Viser live besøgende og dagens trafikhistorik for WordPress.
- * Version: 2.8.4
+ * Version: 2.8.5
  * Author: Jens E. Hummelmose
  * Requires at least: 6.0
  * Tested up to: 6.7
@@ -2700,7 +2700,7 @@ function lstats_enqueue_admin( $hook ) {
     }
 
     wp_enqueue_script( 'chartjs', 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js', array(), '4.4.0', true );
-    $plugin_version = '2.8.4';
+    $plugin_version = '2.8.5';
     wp_enqueue_script( 'lstats-admin', plugins_url( 'admin-dashboard.js', __FILE__ ), array( 'chartjs' ), $plugin_version, true );
     wp_enqueue_style( 'lstats-admin-css', plugins_url( 'admin-dashboard.css', __FILE__ ), array(), $plugin_version );
 
@@ -2808,6 +2808,19 @@ function lstats_get_widget_rows( $filter ) {
 }
 
 /**
+ * PHP-modstykke til admin/mobil JS'ens formatCappedNumber() - viser
+ * store tal som "+100K" i stedet for det fulde tal med tusindtalsseparator.
+ * Bruges i dashboard-widget'en, som er ren server-side PHP-rendering.
+ */
+function lstats_format_capped_number( $n ) {
+    $n = (int) $n;
+    if ( $n > 99999 ) {
+        return '+' . floor( $n / 1000 ) . 'K';
+    }
+    return number_format_i18n( $n );
+}
+
+/**
  * Bygger selve tabel-HTML'en for widget'en - genbruges både ved almindeligt
  * page load og ved AJAX-filterskift, så markup aldrig kan komme ud af sync.
  */
@@ -2840,7 +2853,7 @@ function lstats_render_widget_table( $filter ) {
         echo '<a href="' . esc_url( $url ) . '" style="color:#2271b1; text-decoration:none;">' . esc_html( $title ) . '</a>';
         echo '</td>';
         echo '<td style="text-align:right; padding:5px 0; font-size:13px; font-weight:600; color:#2271b1; border-bottom:1px solid #f0f0f1; white-space:nowrap; width:48px;">' . esc_html( number_format_i18n( $row->views_today ) ) . '</td>';
-        echo '<td style="text-align:right; padding:5px 0 5px 12px; font-size:12px; color:#646970; border-bottom:1px solid #f0f0f1; white-space:nowrap; width:60px;">' . esc_html( number_format_i18n( $row->views_total ) ) . '</td>';
+        echo '<td style="text-align:right; padding:5px 0 5px 12px; font-size:12px; color:#646970; border-bottom:1px solid #f0f0f1; white-space:nowrap; width:60px;">' . esc_html( lstats_format_capped_number( $row->views_total ) ) . '</td>';
         echo '</tr>';
     }
 
